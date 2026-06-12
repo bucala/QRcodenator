@@ -5,11 +5,9 @@ const dom = {
   readabilityNotes: document.querySelector("#readabilityNotes"),
   accountState: document.querySelector("#accountState"),
   accountNotice: document.querySelector("#accountNotice"),
-  firebaseConfig: document.querySelector("#firebaseConfig"),
   accountEmail: document.querySelector("#accountEmail"),
   accountPassword: document.querySelector("#accountPassword"),
   vaultPassphrase: document.querySelector("#vaultPassphrase"),
-  saveFirebaseConfig: document.querySelector("#saveFirebaseConfig"),
   signUp: document.querySelector("#signUp"),
   signIn: document.querySelector("#signIn"),
   signOut: document.querySelector("#signOut"),
@@ -132,7 +130,6 @@ const FORMAT_BITS = { L: 1, M: 0, Q: 3, H: 2 };
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const STORAGE_KEYS = {
-  firebaseConfig: "qrcodenator.firebaseConfig",
   projects: "qrcodenator.projects",
   history: "qrcodenator.history",
   brand: "qrcodenator.brand",
@@ -145,6 +142,8 @@ const FIREBASE_IMPORTS = {
   auth: `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-auth.js`,
   firestore: `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`,
 };
+const FIREBASE_CONFIG_SEAL = "ClACHw0uCxhWVVBsPxsUPw1uP14eKikJVx8IWU05Rlw9OAUVWW4GERg3JwtVOj4vPipQAVQAABgcaRoEEBsNTV5HHxMXABZIGAABAwYDEwADFwEOFwAPEQRBEUIbQ1lOBF8aAxQRFyYAR1RDBR0RQhIEGw0AQgdLXVAQGwsXDwYRLQdOHQQBTk4PBBsSHQcKCgQaDgZBFEQEBBcNB0gGHR4AAggBSw8RBE1eDxsEBh8VShwHFiEGAQAAHCgQTUgPRFZCX0QYQl5AQ1ddRklMAAQfO0lUW1ddTh9CXkJCVlhTVF9VRlUFSBRbEV8SS0dcQBQBVwEEDVVADEEaEAVFW1YBVwQUExAaFgADBBobO0lUW1crWRxAP0kgKVw8Jz9DCQ==";
+const FIREBASE_CONFIG_SEAL_KEY = "qrcodenator-vault-ui";
 const TEMPLATE_PRESETS = {
   apple: { fg: "#111111", bg: "#f7f7f5", accent: "#007aff", frameColor: "#d8d8d8", pattern: "rounded", frame: "none", format: "card" },
   event: { fg: "#14213d", bg: "#f6f8ff", accent: "#ef476f", frameColor: "#ef476f", pattern: "dots", frame: "ticket", format: "story" },
@@ -336,6 +335,7 @@ function drawFormatBits(matrix, ecl, mask) {
     else setFunction(matrix, 8, size - 15 + i, bit);
 
     if (i < 8) setFunction(matrix, size - 1 - i, 8, bit);
+    else if (i === 8) setFunction(matrix, 7, 8, bit);
     else setFunction(matrix, 14 - i, 8, bit);
   }
   setFunction(matrix, 8, size - 8, true);
@@ -753,10 +753,10 @@ function contrastRatio(a, b) {
   return (light + 0.05) / (dark + 0.05);
 }
 
-function getReadability(options) {
+function getReadability(options, qr = null) {
   const notes = [];
   let score = 100;
-  const effective = getEffectiveRenderSettings(options);
+  const effective = getEffectiveRenderSettings(options, qr);
   const contrast = contrastRatio(options.foreground, options.background);
   if (contrast < 4.5) {
     score -= 35;
@@ -767,7 +767,7 @@ function getReadability(options) {
     notes.push("Logo je velke, skuste max 22%.");
   }
   if (options.scanSafe && options.logoSize > 14) {
-    notes.push("Scan-safe render zmensi logo v exporte na bezpecnu velkost.");
+    notes.push("Scan-safe render zmensi logo na bezpecnu velkost.");
   }
   if (!options.scanSafe && (Math.abs(options.logoOffsetX) > 8 || Math.abs(options.logoOffset) > 8)) {
     score -= 18;
@@ -799,7 +799,7 @@ function getReadability(options) {
   return { score, notes: notes.length ? notes : ["Kontrast a logo su v norme."] };
 }
 
-function getEffectiveRenderSettings(options) {
+function getEffectiveRenderSettings(options, qr = null) {
   if (!options.scanSafe) {
     return {
       quietZone: options.quietZone,
@@ -811,13 +811,18 @@ function getEffectiveRenderSettings(options) {
     };
   }
 
+  const version = qr ? qr.version : 1;
+  const maxLogoSize = version >= 7 ? 8 : version >= 5 ? 10 : 12;
+  const maxLogoOffset = version >= 7 ? 3 : 5;
+  const maxClearance = version >= 7 ? 1.08 : 1.12;
+
   return {
-    quietZone: Math.max(options.quietZone, 5),
+    quietZone: Math.max(options.quietZone, 6),
     pattern: ["dots", "diamond", "weave"].includes(options.pattern) ? "square" : options.pattern,
-    logoSize: Math.min(options.logoSize, 14),
-    logoOffset: Math.max(-6, Math.min(6, options.logoOffset)),
-    logoOffsetX: Math.max(-6, Math.min(6, options.logoOffsetX)),
-    logoClearance: Math.min(Math.max(options.logoClearance, 1.08), 1.16),
+    logoSize: Math.min(options.logoSize, maxLogoSize),
+    logoOffset: Math.max(-maxLogoOffset, Math.min(maxLogoOffset, options.logoOffset)),
+    logoOffsetX: Math.max(-maxLogoOffset, Math.min(maxLogoOffset, options.logoOffsetX)),
+    logoClearance: Math.min(Math.max(options.logoClearance, 1.04), maxClearance),
   };
 }
 
@@ -1040,7 +1045,7 @@ function isInLogoClearArea(x, y, cell, logoArea) {
 function drawQrToCanvas(canvas, qr, options) {
   const ctx = canvas.getContext("2d");
   const metrics = getCanvasMetrics(options);
-  const effective = getEffectiveRenderSettings(options);
+  const effective = getEffectiveRenderSettings(options, qr);
   const qrPixels = metrics.qr;
   canvas.width = metrics.width;
   canvas.height = metrics.height;
@@ -1153,7 +1158,7 @@ function drawQrToCanvas(canvas, qr, options) {
 }
 
 function generateSvg(qr, options) {
-  const effective = getEffectiveRenderSettings(options);
+  const effective = getEffectiveRenderSettings(options, qr);
   const totalModules = qr.size + effective.quietZone * 2;
   const cell = options.exportSize / totalModules;
   const labelHeight = Math.round(options.exportSize * (0.18 + Math.max(0, options.textOffsetY) / 100) + 150 * options.textScale);
@@ -1276,7 +1281,7 @@ function render() {
     const qr = generateQr(options.text, options.ecl);
     state.lastQr = qr;
     drawQrToCanvas(dom.canvas, qr, options);
-    const readability = getReadability(options);
+    const readability = getReadability(options, qr);
     setStatus(`Verzia ${qr.version} · maska ${qr.mask}`);
     dom.readabilityScore.textContent = `Skore ${readability.score}`;
     dom.readabilityScore.className = `score-pill ${readability.score >= 82 ? "good" : readability.score >= 62 ? "warn" : "bad"}`;
@@ -1398,59 +1403,6 @@ function loadBrandKit() {
   }
 }
 
-function extractObjectLiteral(source, marker) {
-  const markerIndex = source.indexOf(marker);
-  const start = source.indexOf("{", markerIndex >= 0 ? markerIndex : 0);
-  if (start < 0) return "";
-  let depth = 0;
-  let quote = "";
-  let escaping = false;
-  for (let i = start; i < source.length; i += 1) {
-    const char = source[i];
-    if (quote) {
-      if (escaping) escaping = false;
-      else if (char === "\\") escaping = true;
-      else if (char === quote) quote = "";
-      continue;
-    }
-    if (char === "\"" || char === "'") {
-      quote = char;
-      continue;
-    }
-    if (char === "{") depth += 1;
-    if (char === "}") {
-      depth -= 1;
-      if (depth === 0) return source.slice(start, i + 1);
-    }
-  }
-  return "";
-}
-
-function parseFirebaseConfigText(text) {
-  const trimmed = text.trim();
-  if (!trimmed) throw new Error("Vlozte Firebase config JSON.");
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const literal = extractObjectLiteral(trimmed, "firebaseConfig");
-    if (!literal) throw new Error("Firebase config sa nepodarilo najst.");
-    const jsonish = literal
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/\/\/.*$/gm, "")
-      .replace(/([{,]\s*)([A-Za-z_$][\w$]*)(\s*:)/g, "$1\"$2\"$3")
-      .replace(/'/g, "\"")
-      .replace(/,\s*}/g, "}");
-    return JSON.parse(jsonish);
-  }
-}
-
-function normalizeFirebaseConfigInput() {
-  const config = parseFirebaseConfigText(dom.firebaseConfig.value);
-  const normalized = JSON.stringify(config, null, 2);
-  dom.firebaseConfig.value = normalized;
-  return normalized;
-}
-
 function renderLists() {
   const renderItem = (project) => {
     const button = document.createElement("button");
@@ -1473,6 +1425,14 @@ function bytesToBase64(bytes) {
 function base64ToBytes(value) {
   const binary = atob(value);
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function openEmbeddedFirebaseConfig() {
+  const bytes = base64ToBytes(FIREBASE_CONFIG_SEAL);
+  const text = Array.from(bytes, (byte, index) => (
+    String.fromCharCode(byte ^ FIREBASE_CONFIG_SEAL_KEY.charCodeAt(index % FIREBASE_CONFIG_SEAL_KEY.length))
+  )).join("");
+  return JSON.parse(text);
 }
 
 function getOrCreateVaultSalt() {
@@ -1524,9 +1484,7 @@ async function decryptProject(record) {
 
 async function initFirebase() {
   if (state.firebase) return state.firebase;
-  const configText = localStorage.getItem(STORAGE_KEYS.firebaseConfig) || dom.firebaseConfig.value.trim();
-  if (!configText) throw new Error("Vlozte Firebase config JSON.");
-  const config = parseFirebaseConfigText(configText);
+  const config = openEmbeddedFirebaseConfig();
   const [{ initializeApp }, authMod, firestoreMod] = await Promise.all([
     import(FIREBASE_IMPORTS.app),
     import(FIREBASE_IMPORTS.auth),
@@ -1541,13 +1499,6 @@ async function initFirebase() {
   });
   state.firebase = { app, auth, db, authMod, firestoreMod };
   return state.firebase;
-}
-
-function saveFirebaseConfig() {
-  const text = normalizeFirebaseConfigInput();
-  localStorage.setItem(STORAGE_KEYS.firebaseConfig, text);
-  setStatus("Firebase config ulozeny", "success");
-  setAccountNotice("Firebase config je ulozeny. Mozete sa prihlasit alebo zaregistrovat.", "secure");
 }
 
 async function signUp() {
@@ -1675,7 +1626,7 @@ function setupCollapsiblePanels() {
 
 function setupEvents() {
   document.querySelectorAll("input, textarea, select").forEach((control) => {
-    const shouldRender = !["firebaseConfig", "accountEmail", "accountPassword", "vaultPassphrase", "qrText"].includes(control.id);
+    const shouldRender = !["accountEmail", "accountPassword", "vaultPassphrase", "qrText"].includes(control.id);
     if (shouldRender) {
       control.addEventListener("input", render);
       control.addEventListener("change", render);
@@ -1694,7 +1645,6 @@ function setupEvents() {
   });
 
   dom.template.addEventListener("change", applyTemplate);
-  dom.saveFirebaseConfig.addEventListener("click", () => guarded(saveFirebaseConfig));
   dom.signUp.addEventListener("click", () => guarded(signUp));
   dom.signIn.addEventListener("click", () => guarded(signIn));
   dom.signOut.addEventListener("click", () => guarded(signOut));
@@ -1793,8 +1743,6 @@ function setupEvents() {
 }
 
 function boot() {
-  const firebaseConfig = localStorage.getItem(STORAGE_KEYS.firebaseConfig);
-  if (firebaseConfig) dom.firebaseConfig.value = firebaseConfig;
   setupCollapsiblePanels();
   loadBrandKit();
   setActiveContentFields();

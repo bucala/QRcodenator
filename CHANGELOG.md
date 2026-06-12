@@ -47,6 +47,30 @@ Commit: current QR reliability update
 - SVG export now mirrors the scan-safe module rendering behavior.
 - Readability scoring now warns about risky logo settings more clearly.
 
+## 2026-06-12 - Embedded Firebase Config And Stricter Dense QR Safety
+
+Commit: current Firebase and QR fix
+
+### Added
+
+- Added embedded packaged Firebase web config in `app.js`.
+- Added `firebase-config.json` with the required Firebase web config JSON.
+- Added the exact Firebase config JSON to README for project reference.
+
+### Changed
+
+- Removed the Firebase config textarea from Account Vault.
+- Removed the manual config save button from Account Vault.
+- Firebase Auth and Firestore now initialize from the built-in packaged config.
+- Scan-safe rendering now uses stricter limits for QR version 7 and higher.
+- Dense QR codes now get a larger quiet zone and much smaller centered logo in scan-safe mode.
+- README now explains that Firebase web config is a public identifier and security is handled by Auth, Firestore rules, and vault encryption.
+
+### Fixed
+
+- Fixed QR format information placement by writing format bit 8 to `(7,8)` instead of `(6,8)`.
+- Fixed invalid QR matrices that could look visually correct but fail in mobile scanner apps.
+
 ## 2026-06-12 - Logo Clearance And Text Positioning Controls
 
 Commit: `d67d492` - `Improve logo clearance and text positioning controls`

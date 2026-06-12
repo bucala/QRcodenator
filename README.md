@@ -83,31 +83,23 @@ The app is static and uses Firebase from the browser.
 2. Enable Authentication with Email/Password.
 3. Enable Cloud Firestore.
 4. Publish the included `firestore.rules`.
-5. Paste the Firebase web config into the app.
+5. Firebase web config je vstavaný v aplikácii, takže v UI sa už nevkladá ručne.
 
-The Firebase config input accepts either pure JSON:
+Použitý Firebase web config JSON:
 
 ```json
 {
-  "apiKey": "...",
-  "authDomain": "...",
-  "projectId": "...",
-  "appId": "..."
+  "apiKey": "AIzaSyCJ7oXJf3zf89V4qKYpy-CsxiEDd1_PNJE",
+  "authDomain": "qrcodenator.firebaseapp.com",
+  "projectId": "qrcodenator",
+  "storageBucket": "qrcodenator.firebasestorage.app",
+  "messagingSenderId": "277305771142",
+  "appId": "1:277305771142:web:d3ff251fb8eac44c37fd07",
+  "measurementId": "G-15V8RJ3XBQ"
 }
 ```
 
-Or the full Firebase console snippet:
-
-```js
-const firebaseConfig = {
-  apiKey: "...",
-  authDomain: "...",
-  projectId: "...",
-  appId: "..."
-};
-```
-
-The app extracts and stores only the config object.
+The UI no longer exposes a config textarea. The config is packaged in `app.js` to keep the Account Vault workflow simple. Firebase web config values are public identifiers; project data security still depends on Auth, Firestore rules, and client-side vault encryption.
 
 </details>
 
@@ -131,6 +123,7 @@ The app extracts and stores only the config object.
 | `index.html` | App UI and controls |
 | `styles.css` | Apple-style responsive interface |
 | `app.js` | QR generation, rendering, exports, local storage, Firebase vault |
+| `firebase-config.json` | Firebase web config reference used by the embedded app config |
 | `firestore.rules` | Firestore security rules |
 | `CHANGELOG.md` | Complete project history |
 
