@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="sk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QRcodenator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="preview-pane" aria-label="Náhľad QR kódu">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">QRcodenator</p>
+            <h1>QR kódy s čistým štýlom</h1>
+          </div>
+          <div class="status-pill" id="statusPill">Pripravené</div>
+        </header>
+
+        <div class="canvas-stage">
+          <canvas id="qrCanvas" width="960" height="1120" aria-label="Vygenerovaný QR kód"></canvas>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="downloadPng" type="button">Stiahnuť PNG</button>
+          <button id="downloadSvg" type="button">Stiahnuť SVG</button>
+          <button id="copyPng" type="button">Kopírovať</button>
+        </div>
+      </section>
+
+      <aside class="control-pane" aria-label="Nastavenia QR kódu">
+        <section class="panel">
+          <div class="panel-title">
+            <span>Obsah</span>
+            <span class="badge">Live</span>
+          </div>
+
+          <label>
+            Dáta QR kódu
+            <textarea id="qrText" rows="5" spellcheck="false">https://example.com</textarea>
+          </label>
+
+          <div class="two-col">
+            <label>
+              Nadpis
+              <input id="labelTitle" value="QRcodenator" />
+            </label>
+            <label>
+              Krátky popis
+              <input id="labelCaption" value="Naskenujte a pokračujte" />
+            </label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>Vzhľad</span>
+          </div>
+
+          <div class="two-col">
+            <label>
+              Pattern
+              <select id="patternStyle">
+                <option value="square">Klasický</option>
+                <option value="rounded" selected>Zaoblený</option>
+                <option value="dots">Bodky</option>
+                <option value="diamond">Diamant</option>
+                <option value="weave">Soft grid</option>
+              </select>
+            </label>
+            <label>
+              Očká
+              <select id="eyeStyle">
+                <option value="classic">Klasické</option>
+                <option value="rounded" selected>Zaoblené</option>
+                <option value="circle">Kruhové</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="color-grid">
+            <label>
+              Popredie
+              <input id="foregroundColor" type="color" value="#111111" />
+            </label>
+            <label>
+              Pozadie
+              <input id="backgroundColor" type="color" value="#f7f7f5" />
+            </label>
+            <label>
+              Akcent
+              <input id="accentColor" type="color" value="#007aff" />
+            </label>
+          </div>
+
+          <div class="swatches" id="swatches" aria-label="Farebné palety">
+            <button type="button" data-fg="#111111" data-bg="#f7f7f5" data-accent="#007aff" aria-label="Minimal"></button>
+            <button type="button" data-fg="#102a43" data-bg="#f5fbff" data-accent="#00a896" aria-label="Fresh"></button>
+            <button type="button" data-fg="#1d1d1f" data-bg="#fff8ef" data-accent="#ff7a59" aria-label="Warm"></button>
+            <button type="button" data-fg="#20123a" data-bg="#fbf8ff" data-accent="#8e7dff" aria-label="Studio"></button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>Logo</span>
+          </div>
+
+          <label class="file-control">
+            Obrázok v strede
+            <input id="logoInput" type="file" accept="image/*" />
+          </label>
+
+          <label class="range-row">
+            Veľkosť loga
+            <input id="logoSize" type="range" min="0" max="30" value="18" />
+            <output id="logoSizeValue">18%</output>
+          </label>
+
+          <label class="check-row">
+            <input id="logoPlate" type="checkbox" checked />
+            Biela podložka pod logom
+          </label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>Export</span>
+          </div>
+
+          <div class="two-col">
+            <label>
+              Veľkosť
+              <select id="exportSize">
+                <option value="720">720 px</option>
+                <option value="960" selected>960 px</option>
+                <option value="1280">1280 px</option>
+                <option value="1600">1600 px</option>
+              </select>
+            </label>
+            <label>
+              Korekcia
+              <select id="errorCorrection">
+                <option value="M">M</option>
+                <option value="Q">Q</option>
+                <option value="H" selected>H</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="range-row">
+            Okraj
+            <input id="quietZone" type="range" min="2" max="8" value="4" />
+            <output id="quietZoneValue">4</output>
+          </label>
+        </section>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
