@@ -14,6 +14,22 @@ Commit: current documentation update
 - Added this complete `CHANGELOG.md`.
 - Added a project rule requiring changelog updates with every future change.
 
+## 2026-06-12 - Account Vault Status And Button Layout
+
+Commit: current UI update
+
+### Added
+
+- Added an Account Vault notice target for local account and Firebase feedback.
+- Added compact status formatting with full message preserved as tooltip.
+
+### Changed
+
+- Moved long Firebase/account errors out of the top status pill and into the Account Vault panel.
+- Made the top status pill width constrained so it no longer dominates the header.
+- Reworked Account Vault button layout so config save, sign-in, registration, and sign-out actions are easier to scan.
+- Standardized success and error status styling across local, export, account, and cloud actions.
+
 ## 2026-06-12 - Logo Clearance And Text Positioning Controls
 
 Commit: `d67d492` - `Improve logo clearance and text positioning controls`

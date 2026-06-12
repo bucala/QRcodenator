@@ -141,6 +141,25 @@ h2 {
   font-weight: 650;
 }
 
+.status-pill {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-pill.error {
+  color: var(--bad);
+  border-color: rgba(197, 48, 48, 0.28);
+  background: rgba(197, 48, 48, 0.09);
+}
+
+.status-pill.success {
+  color: var(--good);
+  border-color: rgba(31, 157, 85, 0.28);
+  background: rgba(31, 157, 85, 0.09);
+}
+
 .score-pill.good {
   color: var(--good);
   border-color: rgba(31, 157, 85, 0.28);
@@ -203,6 +222,30 @@ h2 {
 
 .account-panel {
   border-color: rgba(0, 122, 255, 0.18);
+}
+
+.account-panel .button-grid {
+  grid-template-areas:
+    "config config"
+    "signin signin"
+    "signup signout";
+  gap: 10px;
+}
+
+#saveFirebaseConfig {
+  grid-area: config;
+}
+
+#signIn {
+  grid-area: signin;
+}
+
+#signUp {
+  grid-area: signup;
+}
+
+#signOut {
+  grid-area: signout;
 }
 
 .panel-title {
@@ -456,6 +499,12 @@ input[type="range"] {
   color: #166534;
   background: rgba(31, 157, 85, 0.08);
   border-color: rgba(31, 157, 85, 0.22);
+}
+
+.notice.error {
+  color: var(--bad);
+  background: rgba(197, 48, 48, 0.08);
+  border-color: rgba(197, 48, 48, 0.2);
 }
 
 .item-list {

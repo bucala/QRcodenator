@@ -4,6 +4,7 @@ const dom = {
   readabilityScore: document.querySelector("#readabilityScore"),
   readabilityNotes: document.querySelector("#readabilityNotes"),
   accountState: document.querySelector("#accountState"),
+  accountNotice: document.querySelector("#accountNotice"),
   firebaseConfig: document.querySelector("#firebaseConfig"),
   accountEmail: document.querySelector("#accountEmail"),
   accountPassword: document.querySelector("#accountPassword"),
@@ -1195,6 +1196,26 @@ function escapeXml(value) {
   }[char]));
 }
 
+function compactStatus(message) {
+  if (/firebase config/i.test(message)) return "Firebase config";
+  if (/prihl|auth|heslo|email/i.test(message)) return "Account";
+  if (/cloud/i.test(message)) return "Cloud";
+  if (message.length <= 24) return message;
+  return `${message.slice(0, 21)}...`;
+}
+
+function setStatus(message, type = "") {
+  dom.status.textContent = compactStatus(message);
+  dom.status.title = message;
+  dom.status.className = `status-pill${type ? ` ${type}` : ""}`;
+}
+
+function setAccountNotice(message, type = "secure") {
+  if (!dom.accountNotice) return;
+  dom.accountNotice.textContent = message;
+  dom.accountNotice.className = `notice ${type}`;
+}
+
 function render() {
   if (!state.suppressRawSync) syncRawFromFields();
   const options = getOptions();
@@ -1209,12 +1230,12 @@ function render() {
     state.lastQr = qr;
     drawQrToCanvas(dom.canvas, qr, options);
     const readability = getReadability(options);
-    dom.status.textContent = `Verzia ${qr.version} · maska ${qr.mask}`;
+    setStatus(`Verzia ${qr.version} · maska ${qr.mask}`);
     dom.readabilityScore.textContent = `Skore ${readability.score}`;
     dom.readabilityScore.className = `score-pill ${readability.score >= 82 ? "good" : readability.score >= 62 ? "warn" : "bad"}`;
     dom.readabilityNotes.textContent = readability.notes.join(" ");
   } catch (error) {
-    dom.status.textContent = "Obsah je príliš dlhý";
+    setStatus("Obsah je príliš dlhý", "error");
     dom.status.classList.remove("shake");
     void dom.status.offsetWidth;
     dom.status.classList.add("shake");
@@ -1298,7 +1319,7 @@ function saveLocalProject() {
   const next = [snapshot, ...projects].slice(0, 30);
   writeJson(STORAGE_KEYS.projects, next);
   renderLists();
-  dom.status.textContent = "Projekt ulozeny lokalne";
+  setStatus("Projekt ulozeny lokalne", "success");
 }
 
 function saveBrandKit() {
@@ -1309,7 +1330,7 @@ function saveBrandKit() {
     fontStyle: dom.fontStyle.value,
     logoDataUrl: state.logoDataUrl,
   });
-  dom.status.textContent = "Brand kit ulozeny";
+  setStatus("Brand kit ulozeny", "success");
 }
 
 function loadBrandKit() {
@@ -1478,7 +1499,8 @@ async function initFirebase() {
 function saveFirebaseConfig() {
   const text = normalizeFirebaseConfigInput();
   localStorage.setItem(STORAGE_KEYS.firebaseConfig, text);
-  dom.status.textContent = "Firebase config ulozeny";
+  setStatus("Firebase config ulozeny", "success");
+  setAccountNotice("Firebase config je ulozeny. Mozete sa prihlasit alebo zaregistrovat.", "secure");
 }
 
 async function signUp() {
@@ -1486,6 +1508,8 @@ async function signUp() {
   const credential = await fb.authMod.createUserWithEmailAndPassword(fb.auth, safeValue(dom.accountEmail), dom.accountPassword.value);
   state.currentUser = credential.user;
   dom.accountState.textContent = credential.user.email;
+  setStatus("Registracia uspesna", "success");
+  setAccountNotice(`Ucet ${credential.user.email} je vytvoreny a prihlaseny.`, "secure");
 }
 
 async function signIn() {
@@ -1493,6 +1517,8 @@ async function signIn() {
   const credential = await fb.authMod.signInWithEmailAndPassword(fb.auth, safeValue(dom.accountEmail), dom.accountPassword.value);
   state.currentUser = credential.user;
   dom.accountState.textContent = credential.user.email;
+  setStatus("Prihlasene", "success");
+  setAccountNotice(`Prihlasene ako ${credential.user.email}. Cloud projekty ostavaju sifrovane vault frazou.`, "secure");
 }
 
 async function signOut() {
@@ -1500,6 +1526,8 @@ async function signOut() {
   await state.firebase.authMod.signOut(state.firebase.auth);
   state.currentUser = null;
   dom.accountState.textContent = "Offline";
+  setStatus("Odhlasene");
+  setAccountNotice("Odhlasene. Cloud uklada iba zasifrovane projekty. Vault fraza sa neposiela do Firebase.", "secure");
 }
 
 async function saveCloudProject() {
@@ -1508,7 +1536,8 @@ async function saveCloudProject() {
   if (!user) throw new Error("Najprv sa prihlaste.");
   const encrypted = await encryptProject(collectFormState());
   await fb.firestoreMod.setDoc(fb.firestoreMod.doc(fb.db, "users", user.uid, "projects", "active"), encrypted);
-  dom.status.textContent = "Cloud projekt ulozeny sifrovane";
+  setStatus("Cloud ulozeny", "success");
+  setAccountNotice("Cloud projekt bol ulozeny sifrovane.", "secure");
 }
 
 async function loadCloudProject() {
@@ -1519,14 +1548,17 @@ async function loadCloudProject() {
   if (!snap.exists()) throw new Error("Cloud projekt zatial neexistuje.");
   const project = await decryptProject(snap.data());
   applyFormState(project);
-  dom.status.textContent = "Cloud projekt nacitany";
+  setStatus("Cloud nacitany", "success");
+  setAccountNotice("Cloud projekt bol nacitany a desifrovany vo vasom prehliadaci.", "secure");
 }
 
 async function guarded(action) {
   try {
     await action();
   } catch (error) {
-    dom.status.textContent = error.message || "Akcia zlyhala";
+    const message = error.message || "Akcia zlyhala";
+    setStatus(message, "error");
+    setAccountNotice(message, "error");
     dom.status.classList.remove("shake");
     void dom.status.offsetWidth;
     dom.status.classList.add("shake");
@@ -1683,7 +1715,7 @@ function setupEvents() {
     saveHistory();
     const popup = window.open("", "_blank");
     if (!popup) {
-      dom.status.textContent = "Pre PDF povolte popup okno";
+      setStatus("Pre PDF povolte popup okno", "error");
       return;
     }
     popup.document.write(`<!doctype html><title>QRcodenator PDF</title><style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#fff}img{max-width:100%;height:auto}@media print{button{display:none}}</style><button onclick="print()">Tlacit / ulozit PDF</button><img src="${dom.canvas.toDataURL("image/png")}">`);
@@ -1692,24 +1724,24 @@ function setupEvents() {
 
   dom.copyPng.addEventListener("click", async () => {
     if (!navigator.clipboard || !window.ClipboardItem) {
-      dom.status.textContent = "Kopírovanie nepodporované";
+      setStatus("Kopirovanie nepodporovane", "error");
       return;
     }
     dom.canvas.toBlob(async (blob) => {
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      dom.status.textContent = "Skopírované";
+      setStatus("Skopirovane", "success");
     }, "image/png");
   });
 
   dom.copySvg.addEventListener("click", async () => {
     if (!navigator.clipboard) {
-      dom.status.textContent = "Clipboard nepodporovany";
+      setStatus("Clipboard nepodporovany", "error");
       return;
     }
     const options = getOptions();
     const qr = state.lastQr || generateQr(options.text, options.ecl);
     await navigator.clipboard.writeText(generateSvg(qr, options));
-    dom.status.textContent = "SVG skopirovane";
+    setStatus("SVG skopirovane", "success");
   });
 }
 
