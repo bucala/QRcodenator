@@ -21,6 +21,7 @@ Apple-style QR studio for classic and visual QR codes with templates, frames, la
 
 - Content modes: URL, text, email, phone, SMS, Wi-Fi, vCard, calendar event, and GPS location.
 - Live QR rendering with selectable correction level and quiet zone.
+- QR matrix generation uses the pinned `qrcode-generator@1.4.4` browser library with SRI, with the built-in encoder kept as an offline fallback.
 - Pattern styles: classic, rounded, dots, diamond, and soft grid.
 - Finder eye styles: classic, rounded, and circular.
 - Readability score with warnings for contrast, logo size, quiet zone, and decorative choices.

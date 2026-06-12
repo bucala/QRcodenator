@@ -4,6 +4,18 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-13 - Reliable QR Matrix Encoder
+
+Commit: current QR encoder reliability fix
+
+### Changed
+
+- Added pinned `qrcode-generator@1.4.4` with SRI as the primary QR matrix encoder.
+- Kept the built-in QR encoder as a fallback if the external encoder cannot load.
+- Status now shows when QR generation is handled by the library encoder.
+- SVG export now uses the effective scan-safe quiet zone consistently.
+- README now documents the pinned QR encoder dependency.
+
 ## 2026-06-12 - Firebase Auth Diagnostics
 
 Commit: current Firebase diagnostics update

@@ -518,6 +518,26 @@ function penaltyScore(modules) {
 }
 
 function generateQr(text, ecl) {
+  if (typeof window !== "undefined" && typeof window.qrcode === "function") {
+    try {
+      const qrCode = window.qrcode(0, ecl);
+      qrCode.addData(text, "Byte");
+      qrCode.make();
+      const size = qrCode.getModuleCount();
+      return {
+        version: Math.round((size - 17) / 4),
+        mask: "lib",
+        modules: Array.from({ length: size }, (_, y) => (
+          Array.from({ length: size }, (_, x) => qrCode.isDark(y, x))
+        )),
+        size,
+        source: "library",
+      };
+    } catch (error) {
+      console.warn("Primary QR library failed, using fallback generator.", error);
+    }
+  }
+
   const bytes = encoder.encode(text);
   const version = pickVersion(bytes.length, ecl);
   if (!version) throw new Error("Text je príliš dlhý pre vstavaný QR generátor. Skráťte obsah alebo použite odkaz.");
@@ -543,6 +563,7 @@ function generateQr(text, ecl) {
     mask: best.mask,
     modules: best.matrix.modules,
     size,
+    source: "fallback",
   };
 }
 
@@ -1176,8 +1197,8 @@ function generateSvg(qr, options) {
     `<svg xmlns="http://www.w3.org/2000/svg" width="${options.exportSize}" height="${height}" viewBox="0 0 ${options.exportSize} ${height}">`,
     `<rect width="100%" height="100%" fill="${options.background}"/>`,
   ];
-  const offset = options.quietZone * cell;
-  const safeOffset = effective.quietZone * cell;
+  const offset = effective.quietZone * cell;
+  const safeOffset = offset;
   const r = effective.pattern === "rounded" || effective.pattern === "weave" ? cell * 0.2 : 0;
   const svgLogoBox = options.exportSize * (effective.logoSize / 100);
   const svgLogoCenterX = options.exportSize / 2 + options.exportSize * (effective.logoOffsetX / 100);
@@ -1320,7 +1341,7 @@ function render() {
     state.lastQr = qr;
     drawQrToCanvas(dom.canvas, qr, options);
     const readability = getReadability(options, qr);
-    setStatus(`Verzia ${qr.version} · maska ${qr.mask}`);
+    setStatus(qr.source === "library" ? `Verzia ${qr.version} · kniznica` : `Verzia ${qr.version} · maska ${qr.mask}`);
     dom.readabilityScore.textContent = `Skore ${readability.score}`;
     dom.readabilityScore.className = `score-pill ${readability.score >= 82 ? "good" : readability.score >= 62 ? "warn" : "bad"}`;
     dom.readabilityNotes.textContent = readability.notes.join(" ");
