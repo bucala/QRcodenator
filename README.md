@@ -19,7 +19,7 @@ Apple-style QR studio for classic and visual QR codes with templates, frames, la
 <details open>
 <summary><strong>Core QR Studio</strong></summary>
 
-- Content modes: URL, text, email, phone, SMS, Wi-Fi, vCard, calendar event, and GPS location.
+- Content modes: URL, text, email, phone, SMS, Wi-Fi, vCard, WhatsApp, PDF, app link, image gallery, video, social profiles, calendar event, GPS location, and 2D barcode text.
 - Live QR rendering with selectable correction level and quiet zone.
 - QR matrix generation uses the pinned `qrcode-generator@1.4.4` browser library with SRI, with the built-in encoder kept as an offline fallback.
 - Pattern styles: classic, rounded, dots, diamond, and soft grid.
@@ -32,10 +32,12 @@ Apple-style QR studio for classic and visual QR codes with templates, frames, la
 <summary><strong>Design Controls</strong></summary>
 
 - Templates: Apple Minimal, Event Pass, Restaurant Menu, Business Card, Wi-Fi Card, and Product Tag.
-- Frames: none, thin line, soft shadow, glass, ticket, and badge.
+- Frames: none, thin line, soft shadow, glass, ticket, badge, scan bar, label, and poster.
 - Frame color picker independent from foreground, background, and accent colors.
 - Background styles: solid, soft wash, subtle grid, and transparent.
 - Gradients: none, linear, and radial.
+- Theme switch: light and dark interface modes.
+- Language switch: Slovak and English UI labels.
 - Font styles: neutral, elegant, bold, and mono.
 - Text controls: CTA, title, caption, top label, footer, text size, and X/Y text offset.
 

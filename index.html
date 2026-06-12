@@ -15,6 +15,14 @@
             <h1>Bezpecne QR studio</h1>
           </div>
           <div class="topbar-actions">
+            <select id="languageMode" class="mini-select" aria-label="Jazyk">
+              <option value="sk">SK</option>
+              <option value="en">EN</option>
+            </select>
+            <select id="themeMode" class="mini-select" aria-label="Rezim">
+              <option value="light">Svetly</option>
+              <option value="dark">Tmavy</option>
+            </select>
             <div class="score-pill" id="readabilityScore">Skore 100</div>
             <div class="status-pill" id="statusPill">Pripravene</div>
           </div>
@@ -37,7 +45,7 @@
       <aside class="control-pane" aria-label="Nastavenia QR kodu">
         <section class="panel account-panel">
           <div class="panel-title">
-            <span>Account Vault</span>
+            <span>Ucet</span>
             <span class="badge" id="accountState">Offline</span>
           </div>
 
@@ -69,6 +77,28 @@
         </section>
 
         <section class="panel">
+          <div class="panel-title"><span>Projekty</span></div>
+
+          <label>Nazov projektu<input id="projectName" value="Moj QR projekt" /></label>
+          <div class="button-grid">
+            <button id="saveLocal" type="button">Ulozit lokalne</button>
+            <button id="saveCloud" type="button">Ulozit cloud</button>
+            <button id="loadCloud" type="button">Nacitat cloud</button>
+            <button id="saveBrand" type="button">Brand kit</button>
+          </div>
+          <div class="lists">
+            <div>
+              <h2>Historia</h2>
+              <div id="historyList" class="item-list"></div>
+            </div>
+            <div>
+              <h2>Projekty</h2>
+              <div id="projectList" class="item-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
           <div class="panel-title">
             <span>Obsah</span>
             <span class="badge">Live</span>
@@ -84,8 +114,15 @@
               <option value="sms">SMS</option>
               <option value="wifi">Wi-Fi</option>
               <option value="vcard">Kontakt vCard</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="pdf">PDF</option>
+              <option value="app">App Store / Play</option>
+              <option value="images">Obrazky</option>
+              <option value="video">Video</option>
+              <option value="social">Social media</option>
               <option value="event">Kalendar event</option>
               <option value="location">GPS poloha</option>
+              <option value="barcode">2D Barcode</option>
             </select>
           </label>
 
@@ -136,6 +173,39 @@
               <label>Web<input id="vcardUrl" placeholder="https://" /></label>
             </div>
 
+            <div data-mode-field="whatsapp" class="field-group">
+              <label>Telefon WhatsApp<input id="whatsappPhone" type="tel" placeholder="+421..." /></label>
+              <label>Sprava<textarea id="whatsappMessage" rows="3" placeholder="Predvyplnena WhatsApp sprava"></textarea></label>
+            </div>
+
+            <label data-mode-field="pdf">
+              PDF URL
+              <input id="pdfUrl" placeholder="https://.../subor.pdf" />
+            </label>
+
+            <div data-mode-field="app" class="field-group">
+              <label>iOS App Store URL<input id="appIos" placeholder="https://apps.apple.com/..." /></label>
+              <label>Android Play URL<input id="appAndroid" placeholder="https://play.google.com/store/apps/..." /></label>
+              <label>Fallback web<input id="appFallback" placeholder="https://..." /></label>
+            </div>
+
+            <label data-mode-field="images">
+              Galeria obrazkov URL
+              <input id="imagesUrl" placeholder="https://..." />
+            </label>
+
+            <label data-mode-field="video">
+              Video URL
+              <input id="videoUrl" placeholder="https://youtube.com/..." />
+            </label>
+
+            <div data-mode-field="social" class="field-group">
+              <label>Instagram<input id="socialInstagram" placeholder="https://instagram.com/..." /></label>
+              <label>Facebook<input id="socialFacebook" placeholder="https://facebook.com/..." /></label>
+              <label>LinkedIn<input id="socialLinkedin" placeholder="https://linkedin.com/in/..." /></label>
+              <label>TikTok / X / dalsi profil<input id="socialExtra" placeholder="https://..." /></label>
+            </div>
+
             <div data-mode-field="event" class="field-group">
               <label>Nazov<input id="eventTitle" placeholder="Stretnutie" /></label>
               <div class="two-col">
@@ -151,6 +221,11 @@
                 <label>Latitude<input id="geoLat" type="number" step="0.000001" placeholder="48.1486" /></label>
                 <label>Longitude<input id="geoLng" type="number" step="0.000001" placeholder="17.1077" /></label>
               </div>
+            </div>
+
+            <div data-mode-field="barcode" class="field-group">
+              <label>Data pre 2D barcode<textarea id="barcodeValue" rows="4" placeholder="GS1, produktove alebo logisticke data"></textarea></label>
+              <label>Format<select id="barcodeFormat"><option value="raw">Raw text</option><option value="gs1">GS1 text</option><option value="url">URL payload</option></select></label>
             </div>
           </div>
 
@@ -219,6 +294,8 @@
                 <option value="dots">Bodky</option>
                 <option value="diamond">Diamant</option>
                 <option value="weave">Soft grid</option>
+                <option value="mosaic">Mosaic</option>
+                <option value="connected">Connected</option>
               </select>
             </label>
           </div>
@@ -276,6 +353,9 @@
                 <option value="glass">Glass</option>
                 <option value="ticket">Ticket</option>
                 <option value="badge">Badge</option>
+                <option value="scanbar">Scan bar</option>
+                <option value="label">Label</option>
+                <option value="poster">Poster</option>
               </select>
             </label>
             <label>
@@ -291,7 +371,7 @@
 
           <label class="file-control">Obrazok v strede<input id="logoInput" type="file" accept="image/*" /></label>
           <div class="two-col">
-            <label>Ikona<select id="centerIcon"><option value="none">Bez ikony</option><option value="link">Web</option><option value="wifi">Wi-Fi</option><option value="contact">Kontakt</option><option value="mail">Mail</option><option value="map">Mapa</option><option value="pay">Platba</option><option value="instagram">Instagram</option></select></label>
+            <label>Ikona<select id="centerIcon"><option value="none">Bez ikony</option><option value="link">Web</option><option value="wifi">Wi-Fi</option><option value="contact">Kontakt</option><option value="mail">Mail</option><option value="map">Mapa</option><option value="pay">Platba</option><option value="instagram">Instagram</option><option value="whatsapp">WhatsApp</option><option value="pdf">PDF</option><option value="app">App</option><option value="video">Video</option><option value="social">Social</option><option value="barcode">2D</option></select></label>
             <label>Logo X<input id="logoOffsetX" type="range" min="-18" max="18" value="0" /></label>
           </div>
           <div class="two-col">
@@ -333,27 +413,6 @@
           <div class="notice" id="readabilityNotes">Kontrast a logo su v norme.</div>
         </section>
 
-        <section class="panel">
-          <div class="panel-title"><span>Projekty</span></div>
-
-          <label>Nazov projektu<input id="projectName" value="Moj QR projekt" /></label>
-          <div class="button-grid">
-            <button id="saveLocal" type="button">Ulozit lokalne</button>
-            <button id="saveCloud" type="button">Ulozit cloud</button>
-            <button id="loadCloud" type="button">Nacitat cloud</button>
-            <button id="saveBrand" type="button">Brand kit</button>
-          </div>
-          <div class="lists">
-            <div>
-              <h2>Historia</h2>
-              <div id="historyList" class="item-list"></div>
-            </div>
-            <div>
-              <h2>Projekty</h2>
-              <div id="projectList" class="item-list"></div>
-            </div>
-          </div>
-        </section>
       </aside>
     </main>
 

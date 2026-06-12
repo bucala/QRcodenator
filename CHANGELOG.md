@@ -4,6 +4,26 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-13 - QR.io Inspired Studio Expansion
+
+Commit: current feature expansion
+
+### Added
+
+- Added light/dark interface mode with local preference persistence.
+- Added Slovak/English UI language switching with local preference persistence.
+- Added QR.io-inspired content types: WhatsApp, PDF, app link, image gallery, video, social profiles, and 2D barcode payloads.
+- Added QR.io-inspired frame styles: scan bar, label, and poster.
+- Added Mosaic and Connected body patterns.
+- Added center icon options for WhatsApp, PDF, app, video, social, and 2D codes.
+
+### Changed
+
+- Renamed Account Vault panel to `Ucet`.
+- Moved Projects directly under the account panel for faster account/project workflow.
+- Scan-safe mode now keeps creative body patterns and small logos while still limiting risky logo sizes.
+- README now documents the expanded content and design controls.
+
 ## 2026-06-13 - Reliable QR Matrix Encoder
 
 Commit: current QR encoder reliability fix

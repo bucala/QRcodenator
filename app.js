@@ -5,6 +5,8 @@ const dom = {
   readabilityNotes: document.querySelector("#readabilityNotes"),
   accountState: document.querySelector("#accountState"),
   accountNotice: document.querySelector("#accountNotice"),
+  languageMode: document.querySelector("#languageMode"),
+  themeMode: document.querySelector("#themeMode"),
   accountEmail: document.querySelector("#accountEmail"),
   accountPassword: document.querySelector("#accountPassword"),
   vaultPassphrase: document.querySelector("#vaultPassphrase"),
@@ -31,6 +33,18 @@ const dom = {
   vcardPhone: document.querySelector("#vcardPhone"),
   vcardEmail: document.querySelector("#vcardEmail"),
   vcardUrl: document.querySelector("#vcardUrl"),
+  whatsappPhone: document.querySelector("#whatsappPhone"),
+  whatsappMessage: document.querySelector("#whatsappMessage"),
+  pdfUrl: document.querySelector("#pdfUrl"),
+  appIos: document.querySelector("#appIos"),
+  appAndroid: document.querySelector("#appAndroid"),
+  appFallback: document.querySelector("#appFallback"),
+  imagesUrl: document.querySelector("#imagesUrl"),
+  videoUrl: document.querySelector("#videoUrl"),
+  socialInstagram: document.querySelector("#socialInstagram"),
+  socialFacebook: document.querySelector("#socialFacebook"),
+  socialLinkedin: document.querySelector("#socialLinkedin"),
+  socialExtra: document.querySelector("#socialExtra"),
   eventTitle: document.querySelector("#eventTitle"),
   eventStart: document.querySelector("#eventStart"),
   eventEnd: document.querySelector("#eventEnd"),
@@ -38,6 +52,8 @@ const dom = {
   eventDescription: document.querySelector("#eventDescription"),
   geoLat: document.querySelector("#geoLat"),
   geoLng: document.querySelector("#geoLng"),
+  barcodeValue: document.querySelector("#barcodeValue"),
+  barcodeFormat: document.querySelector("#barcodeFormat"),
   labelTitle: document.querySelector("#labelTitle"),
   labelCta: document.querySelector("#labelCta"),
   labelCaption: document.querySelector("#labelCaption"),
@@ -135,6 +151,8 @@ const STORAGE_KEYS = {
   brand: "qrcodenator.brand",
   vaultSalt: "qrcodenator.vaultSalt",
   collapsedPanels: "qrcodenator.collapsedPanels",
+  theme: "qrcodenator.theme",
+  language: "qrcodenator.language",
 };
 const FIREBASE_VERSION = "12.14.0";
 const FIREBASE_IMPORTS = {
@@ -145,6 +163,63 @@ const FIREBASE_IMPORTS = {
 const FIREBASE_CONFIG_SEAL = "ClACHw0uCxhWVVBsPxsUPw1uP14eKikJVx8IWU05Rlw9OAUVWW4GERg3JwtVOj4vPipQAVQAABgcaRoEEBsNTV5HHxMXABZIGAABAwYDEwADFwEOFwAPEQRBEUIbQ1lOBF8aAxQRFyYAR1RDBR0RQhIEGw0AQgdLXVAQGwsXDwYRLQdOHQQBTk4PBBsSHQcKCgQaDgZBFEQEBBcNB0gGHR4AAggBSw8RBE1eDxsEBh8VShwHFiEGAQAAHCgQTUgPRFZCX0QYQl5AQ1ddRklMAAQfO0lUW1ddTh9CXkJCVlhTVF9VRlUFSBRbEV8SS0dcQBQBVwEEDVVADEEaEAVFW1YBVwQUExAaFgADBBobO0lUW1crWRxAP0kgKVw8Jz9DCQ==";
 const FIREBASE_CONFIG_SEAL_KEY = "qrcodenator-vault-ui";
 const FIREBASE_PROJECT_ID = "qrcodenator";
+const UI_TRANSLATIONS = {
+  en: {
+    "Bezpecne QR studio": "Secure QR studio",
+    "Ucet": "Account",
+    "Projekty": "Projects",
+    "Obsah": "Content",
+    "Texty": "Texts",
+    "Vzhlad": "Design",
+    "Ram a logo": "Frame and logo",
+    "Export a kontrola": "Export and check",
+    "Nazov projektu": "Project name",
+    "Ulozit lokalne": "Save local",
+    "Ulozit cloud": "Save cloud",
+    "Nacitat cloud": "Load cloud",
+    "Historia": "History",
+    "Typ QR": "QR type",
+    "URL adresa": "URL address",
+    "Telefon": "Phone",
+    "Kontakt vCard": "vCard contact",
+    "Kalendar event": "Calendar event",
+    "GPS poloha": "GPS location",
+    "Obrazky": "Images",
+    "Nadpis": "Title",
+    "Popis": "Caption",
+    "Horny text": "Top text",
+    "Podpis / URL": "Footer / URL",
+    "Font": "Font",
+    "Velkost textov": "Text size",
+    "Posun textu X": "Text offset X",
+    "Posun textu Y": "Text offset Y",
+    "Sablona": "Template",
+    "Pattern": "Pattern",
+    "Ocka": "Eyes",
+    "Rohy karty": "Card corners",
+    "Popredie": "Foreground",
+    "Pozadie": "Background",
+    "Akcent": "Accent",
+    "Ram": "Frame",
+    "Gradient": "Gradient",
+    "Oramovanie": "Frame style",
+    "Format": "Format",
+    "Obrazok v strede": "Center image",
+    "Ikona": "Icon",
+    "Cista zona": "Clear zone",
+    "Velkost loga": "Logo size",
+    "Biela podlozka pod logom": "White logo plate",
+    "Velkost": "Size",
+    "Korekcia": "Correction",
+    "Okraj": "Quiet zone",
+    "Simulacia tlace": "Print simulation",
+    "Scan-safe render pre mobilne skenery": "Scan-safe render for mobile scanners",
+    "Raw data": "Raw data",
+    "Kopirovat": "Copy",
+    "Svetly": "Light",
+    "Tmavy": "Dark",
+  },
+};
 const TEMPLATE_PRESETS = {
   apple: { fg: "#111111", bg: "#f7f7f5", accent: "#007aff", frameColor: "#d8d8d8", pattern: "rounded", frame: "none", format: "card" },
   event: { fg: "#14213d", bg: "#f6f8ff", accent: "#ef476f", frameColor: "#ef476f", pattern: "dots", frame: "ticket", format: "story" },
@@ -618,6 +693,27 @@ function drawModule(ctx, x, y, cell, style, color, modules, moduleX, moduleY) {
     return;
   }
 
+  if (style === "mosaic") {
+    const variant = (moduleX * 7 + moduleY * 11) % 4;
+    const radius = variant === 0 ? cell * 0.04 : cell * 0.2;
+    const pad = variant === 1 ? cell * 0.03 : cell * 0.08;
+    roundRect(ctx, x + pad, y + pad, cell - pad * 2, cell - pad * 2, radius);
+    ctx.fill();
+    return;
+  }
+
+  if (style === "connected") {
+    const size = modules.length;
+    const left = moduleX > 0 && modules[moduleY][moduleX - 1];
+    const right = moduleX < size - 1 && modules[moduleY][moduleX + 1];
+    const up = moduleY > 0 && modules[moduleY - 1][moduleX];
+    const down = moduleY < size - 1 && modules[moduleY + 1][moduleX];
+    const pad = cell * 0.14;
+    roundRect(ctx, x + (left ? 0 : pad), y + (up ? 0 : pad), cell - (left ? 0 : pad) - (right ? 0 : pad), cell - (up ? 0 : pad) - (down ? 0 : pad), cell * 0.16);
+    ctx.fill();
+    return;
+  }
+
   if (style === "rounded") {
     roundRect(ctx, x + inset, y + inset, cell - inset * 2, cell - inset * 2, cell * 0.22);
     ctx.fill();
@@ -681,6 +777,26 @@ function normalizeUrl(value) {
   return `https://${value}`;
 }
 
+function normalizePhone(value) {
+  return value.replace(/[^\d+]/g, "");
+}
+
+function firstFilledUrl(...values) {
+  const value = values.find((item) => safeValue(item));
+  return value ? normalizeUrl(safeValue(value)) : "https://example.com";
+}
+
+function buildSocialPayload() {
+  const links = [
+    ["Instagram", safeValue(dom.socialInstagram)],
+    ["Facebook", safeValue(dom.socialFacebook)],
+    ["LinkedIn", safeValue(dom.socialLinkedin)],
+    ["Profile", safeValue(dom.socialExtra)],
+  ].filter(([, value]) => value);
+  if (!links.length) return "https://example.com";
+  return ["SOCIAL QR", ...links.map(([label, value]) => `${label}: ${normalizeUrl(value)}`)].join("\n");
+}
+
 function formatDateTimeLocal(value) {
   if (!value) return "";
   return value.replace(/[-:]/g, "").replace("T", "00").slice(0, 15);
@@ -719,6 +835,22 @@ function buildQrPayload() {
         safeValue(dom.vcardUrl) ? `URL:${normalizeUrl(safeValue(dom.vcardUrl))}` : "",
         "END:VCARD",
       ].filter(Boolean).join("\n");
+    case "whatsapp": {
+      const phone = normalizePhone(safeValue(dom.whatsappPhone));
+      const message = safeValue(dom.whatsappMessage);
+      const params = message ? `?text=${encodeURIComponent(message)}` : "";
+      return phone ? `https://wa.me/${phone.replace(/^\+/, "")}${params}` : "https://wa.me/";
+    }
+    case "pdf":
+      return firstFilledUrl(dom.pdfUrl);
+    case "app":
+      return firstFilledUrl(dom.appIos, dom.appAndroid, dom.appFallback);
+    case "images":
+      return firstFilledUrl(dom.imagesUrl);
+    case "video":
+      return firstFilledUrl(dom.videoUrl);
+    case "social":
+      return buildSocialPayload();
     case "event":
       return [
         "BEGIN:VEVENT",
@@ -731,6 +863,12 @@ function buildQrPayload() {
       ].filter(Boolean).join("\n");
     case "location":
       return `geo:${safeValue(dom.geoLat) || "48.1486"},${safeValue(dom.geoLng) || "17.1077"}`;
+    case "barcode": {
+      const value = safeValue(dom.barcodeValue) || "0101234567890128";
+      if (dom.barcodeFormat.value === "url") return normalizeUrl(value);
+      if (dom.barcodeFormat.value === "gs1") return `GS1:${value}`;
+      return value;
+    }
     default:
       return safeValue(dom.text) || " ";
   }
@@ -791,11 +929,11 @@ function getReadability(options, qr = null) {
   if (options.scanSafe && options.logoSize > 14) {
     notes.push("Scan-safe render zmensi logo na bezpecnu velkost.");
   }
-  if (options.scanSafe && qr && qr.version >= 7 && options.logoSize > 0) {
-    notes.push("Pri velkom QR scan-safe vypne logo, aby bol kod citatelny.");
+  if (options.scanSafe && qr && qr.version >= 7 && options.logoSize > effective.logoSize) {
+    notes.push("Pri velkom QR scan-safe zmensi logo, aby bol kod citatelny.");
   }
-  if (options.scanSafe && qr && qr.version >= 7 && options.eyeStyle !== "classic") {
-    notes.push("Pri velkom QR scan-safe pouzije klasicke rohy.");
+  if (options.scanSafe && (options.pattern === "diamond" || options.pattern === "dots")) {
+    notes.push("Dekorativny pattern je povoleny, no po exporte ho otestujte skenerom.");
   }
   if (!options.scanSafe && (Math.abs(options.logoOffsetX) > 8 || Math.abs(options.logoOffset) > 8)) {
     score -= 18;
@@ -840,14 +978,14 @@ function getEffectiveRenderSettings(options, qr = null) {
   }
 
   const version = qr ? qr.version : 1;
-  const maxLogoSize = version >= 7 ? 0 : version >= 5 ? 8 : 12;
-  const maxLogoOffset = version >= 7 ? 3 : 5;
-  const maxClearance = version >= 7 ? 1.08 : 1.12;
+  const maxLogoSize = version >= 7 ? 8 : version >= 5 ? 12 : 16;
+  const maxLogoOffset = version >= 7 ? 5 : 7;
+  const maxClearance = version >= 7 ? 1.12 : 1.18;
 
   return {
     quietZone: Math.max(options.quietZone, 6),
-    pattern: "square",
-    eyeStyle: version >= 7 ? "classic" : options.eyeStyle,
+    pattern: options.pattern,
+    eyeStyle: options.eyeStyle,
     logoSize: Math.min(options.logoSize, maxLogoSize),
     logoOffset: Math.max(-maxLogoOffset, Math.min(maxLogoOffset, options.logoOffset)),
     logoOffsetX: Math.max(-maxLogoOffset, Math.min(maxLogoOffset, options.logoOffsetX)),
@@ -975,7 +1113,15 @@ function drawFrame(ctx, x, y, size, options) {
     roundRect(ctx, x - size * 0.065, y - size * 0.065, size * 1.13, size * 1.13, radius);
     ctx.fill();
   }
-  if (options.frameStyle === "line" || options.frameStyle === "glass" || options.frameStyle === "ticket" || options.frameStyle === "badge") {
+  if (options.frameStyle === "poster") {
+    ctx.fillStyle = options.frameColor;
+    roundRect(ctx, x - size * 0.08, y - size * 0.08, size * 1.16, size * 1.34, radius);
+    ctx.fill();
+    ctx.fillStyle = options.background;
+    roundRect(ctx, x - size * 0.03, y - size * 0.03, size * 1.06, size * 1.06, radius * 0.72);
+    ctx.fill();
+  }
+  if (options.frameStyle === "line" || options.frameStyle === "glass" || options.frameStyle === "ticket" || options.frameStyle === "badge" || options.frameStyle === "scanbar" || options.frameStyle === "label") {
     ctx.strokeStyle = options.frameStyle === "badge" ? options.accent : options.frameColor;
     ctx.lineWidth = Math.max(3, size * 0.01);
     roundRect(ctx, x - size * 0.04, y - size * 0.04, size * 1.08, size * 1.08, radius);
@@ -989,6 +1135,32 @@ function drawFrame(ctx, x, y, size, options) {
       ctx.arc(nx, ny, notch, 0, Math.PI * 2);
       ctx.fill();
     });
+  }
+  if (options.frameStyle === "scanbar") {
+    const barY = y + size + size * 0.045;
+    const barH = size * 0.105;
+    ctx.fillStyle = options.frameColor;
+    roundRect(ctx, x, barY, size, barH, barH * 0.18);
+    ctx.fill();
+    ctx.fillStyle = options.background;
+    ctx.font = `800 ${Math.round(size * 0.052)}px ${getFontFamily(options.fontStyle)}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText((options.cta || "SCAN ME").toUpperCase(), x + size / 2, barY + barH / 2);
+  }
+  if (options.frameStyle === "label") {
+    const tagW = size * 0.46;
+    const tagH = size * 0.09;
+    const tagX = x + size / 2 - tagW / 2;
+    const tagY = y + size + size * 0.035;
+    ctx.fillStyle = options.frameColor;
+    roundRect(ctx, tagX, tagY, tagW, tagH, tagH * 0.5);
+    ctx.fill();
+    ctx.fillStyle = options.background;
+    ctx.font = `760 ${Math.round(size * 0.038)}px ${getFontFamily(options.fontStyle)}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(options.cta || "Scan me", x + size / 2, tagY + tagH / 2);
   }
   ctx.restore();
 }
@@ -1050,6 +1222,26 @@ function drawCenterIcon(ctx, icon, cx, cy, size, color) {
     ctx.beginPath();
     ctx.arc(cx + r * 0.32, cy - r * 0.32, r * 0.06, 0, Math.PI * 2);
     ctx.fill();
+  } else if (icon === "whatsapp") {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.58, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - r * 0.18, cy + r * 0.5);
+    ctx.lineTo(cx - r * 0.02, cy + r * 0.28);
+    ctx.stroke();
+    ctx.font = `800 ${Math.round(size * 0.58)}px ${getFontFamily("system")}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("W", cx, cy + size * 0.02);
+  } else if (icon === "pdf" || icon === "app" || icon === "video" || icon === "social" || icon === "barcode") {
+    const label = { pdf: "PDF", app: "APP", video: "▶", social: "#", barcode: "2D" }[icon];
+    roundRect(ctx, cx - r * 0.58, cy - r * 0.46, r * 1.16, r * 0.92, r * 0.12);
+    ctx.stroke();
+    ctx.font = `850 ${Math.round(size * (icon === "video" ? 0.54 : 0.34))}px ${getFontFamily("system")}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, cx, cy + size * 0.02);
   } else {
     ctx.beginPath();
     ctx.arc(cx - r * 0.22, cy, r * 0.28, Math.PI * 0.25, Math.PI * 1.75);
@@ -1153,7 +1345,9 @@ function drawQrToCanvas(canvas, qr, options) {
   const fontFamily = getFontFamily(options.fontStyle);
   const scale = options.textScale;
   const textX = canvas.width / 2 + qrPixels * (options.textOffsetX / 100);
-  const textStartY = qrY + qrPixels + qrPixels * (0.1 + options.textOffsetY / 100);
+  const frameTextOffset = ["scanbar", "label", "poster"].includes(options.frameStyle) ? 0.13 : 0;
+  const frameOwnsCta = options.frameStyle === "scanbar" || options.frameStyle === "label";
+  const textStartY = qrY + qrPixels + qrPixels * (0.1 + frameTextOffset + options.textOffsetY / 100);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   if (options.topLabel) {
@@ -1161,12 +1355,12 @@ function drawQrToCanvas(canvas, qr, options) {
     ctx.font = `700 ${Math.round(qrPixels * 0.028 * scale)}px ${fontFamily}`;
     ctx.fillText(options.topLabel, textX, Math.max(36, qrY * 0.55));
   }
-  if (options.cta) {
+  if (options.cta && !frameOwnsCta) {
     ctx.fillStyle = options.foreground;
     ctx.font = `800 ${Math.round(qrPixels * 0.05 * scale)}px ${fontFamily}`;
     ctx.fillText(options.cta, textX, textStartY);
   }
-  let textY = textStartY + (options.cta ? qrPixels * 0.07 * scale : 0);
+  let textY = textStartY + (options.cta && !frameOwnsCta ? qrPixels * 0.07 * scale : 0);
   if (options.title) {
     ctx.fillStyle = options.foreground;
     const weight = options.fontStyle === "bold" ? 850 : 700;
@@ -1341,8 +1535,11 @@ function render() {
     state.lastQr = qr;
     drawQrToCanvas(dom.canvas, qr, options);
     const readability = getReadability(options, qr);
-    setStatus(qr.source === "library" ? `Verzia ${qr.version} · kniznica` : `Verzia ${qr.version} · maska ${qr.mask}`);
-    dom.readabilityScore.textContent = `Skore ${readability.score}`;
+    const versionLabel = getLanguage() === "en" ? "Version" : "Verzia";
+    const maskLabel = getLanguage() === "en" ? "mask" : "maska";
+    const libraryLabel = getLanguage() === "en" ? "library" : "kniznica";
+    setStatus(qr.source === "library" ? `${versionLabel} ${qr.version} · ${libraryLabel}` : `${versionLabel} ${qr.version} · ${maskLabel} ${qr.mask}`);
+    dom.readabilityScore.textContent = `${getLanguage() === "en" ? "Score" : "Skore"} ${readability.score}`;
     dom.readabilityScore.className = `score-pill ${readability.score >= 82 ? "good" : readability.score >= 62 ? "warn" : "bad"}`;
     dom.readabilityNotes.textContent = readability.notes.join(" ");
   } catch (error) {
@@ -1374,6 +1571,46 @@ function readJson(key, fallback) {
 
 function writeJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getLanguage() {
+  return dom.languageMode ? dom.languageMode.value : "sk";
+}
+
+function translateText(value, language = getLanguage()) {
+  if (language === "sk") return value;
+  return UI_TRANSLATIONS.en[value] || value;
+}
+
+function applyTheme(theme) {
+  const nextTheme = theme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = nextTheme;
+  if (dom.themeMode) dom.themeMode.value = nextTheme;
+  localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
+}
+
+function applyLanguage(language) {
+  const nextLanguage = language === "en" ? "en" : "sk";
+  const forward = UI_TRANSLATIONS.en;
+  const reverse = Object.fromEntries(Object.entries(forward).map(([sk, en]) => [en, sk]));
+  const map = nextLanguage === "en" ? forward : reverse;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((node) => {
+    const text = node.nodeValue;
+    const trimmed = text.trim();
+    if (!trimmed || !map[trimmed]) return;
+    node.nodeValue = text.replace(trimmed, map[trimmed]);
+  });
+  document.documentElement.lang = nextLanguage;
+  if (dom.languageMode) dom.languageMode.value = nextLanguage;
+  localStorage.setItem(STORAGE_KEYS.language, nextLanguage);
+}
+
+function initPreferences() {
+  applyTheme(localStorage.getItem(STORAGE_KEYS.theme) || "light");
+  applyLanguage(localStorage.getItem(STORAGE_KEYS.language) || "sk");
 }
 
 function collectFormState() {
@@ -1412,6 +1649,8 @@ function applyFormState(project) {
     state.logoImage = null;
     state.logoDataUrl = "";
   }
+  applyTheme(dom.themeMode.value);
+  applyLanguage(dom.languageMode.value);
   setActiveContentFields();
   render();
 }
@@ -1697,6 +1936,16 @@ function setupEvents() {
     render();
   });
 
+  dom.themeMode.addEventListener("change", () => {
+    applyTheme(dom.themeMode.value);
+    render();
+  });
+
+  dom.languageMode.addEventListener("change", () => {
+    applyLanguage(dom.languageMode.value);
+    render();
+  });
+
   dom.text.addEventListener("input", () => {
     state.suppressRawSync = true;
     render();
@@ -1802,6 +2051,7 @@ function setupEvents() {
 }
 
 function boot() {
+  initPreferences();
   setupCollapsiblePanels();
   loadBrandKit();
   setActiveContentFields();
