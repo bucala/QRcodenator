@@ -4,6 +4,16 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-12 - Static CI Workflow Fix
+
+Commit: current CI fix
+
+### Fixed
+
+- Fixed GitHub Actions by removing mandatory npm cache setup for a repository without an npm lockfile.
+- Replaced the template npm install/test sequence with `node --check app.js` for the current static app.
+- Kept optional npm install, build, and test steps for future package-based development.
+
 ## 2026-06-12 - Pixel-Aligned Screen Scanning
 
 Commit: current QR scan fix
