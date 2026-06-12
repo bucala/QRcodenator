@@ -130,6 +130,7 @@ const STORAGE_KEYS = {
   history: "qrcodenator.history",
   brand: "qrcodenator.brand",
   vaultSalt: "qrcodenator.vaultSalt",
+  collapsedPanels: "qrcodenator.collapsedPanels",
 };
 const FIREBASE_VERSION = "12.14.0";
 const FIREBASE_IMPORTS = {
@@ -1275,6 +1276,59 @@ function loadBrandKit() {
   }
 }
 
+function extractObjectLiteral(source, marker) {
+  const markerIndex = source.indexOf(marker);
+  const start = source.indexOf("{", markerIndex >= 0 ? markerIndex : 0);
+  if (start < 0) return "";
+  let depth = 0;
+  let quote = "";
+  let escaping = false;
+  for (let i = start; i < source.length; i += 1) {
+    const char = source[i];
+    if (quote) {
+      if (escaping) escaping = false;
+      else if (char === "\\") escaping = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "\"" || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, i + 1);
+    }
+  }
+  return "";
+}
+
+function parseFirebaseConfigText(text) {
+  const trimmed = text.trim();
+  if (!trimmed) throw new Error("Vlozte Firebase config JSON.");
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const literal = extractObjectLiteral(trimmed, "firebaseConfig");
+    if (!literal) throw new Error("Firebase config sa nepodarilo najst.");
+    const jsonish = literal
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/.*$/gm, "")
+      .replace(/([{,]\s*)([A-Za-z_$][\w$]*)(\s*:)/g, "$1\"$2\"$3")
+      .replace(/'/g, "\"")
+      .replace(/,\s*}/g, "}");
+    return JSON.parse(jsonish);
+  }
+}
+
+function normalizeFirebaseConfigInput() {
+  const config = parseFirebaseConfigText(dom.firebaseConfig.value);
+  const normalized = JSON.stringify(config, null, 2);
+  dom.firebaseConfig.value = normalized;
+  return normalized;
+}
+
 function renderLists() {
   const renderItem = (project) => {
     const button = document.createElement("button");
@@ -1350,7 +1404,7 @@ async function initFirebase() {
   if (state.firebase) return state.firebase;
   const configText = localStorage.getItem(STORAGE_KEYS.firebaseConfig) || dom.firebaseConfig.value.trim();
   if (!configText) throw new Error("Vlozte Firebase config JSON.");
-  const config = JSON.parse(configText);
+  const config = parseFirebaseConfigText(configText);
   const [{ initializeApp }, authMod, firestoreMod] = await Promise.all([
     import(FIREBASE_IMPORTS.app),
     import(FIREBASE_IMPORTS.auth),
@@ -1368,8 +1422,7 @@ async function initFirebase() {
 }
 
 function saveFirebaseConfig() {
-  const text = dom.firebaseConfig.value.trim();
-  JSON.parse(text);
+  const text = normalizeFirebaseConfigInput();
   localStorage.setItem(STORAGE_KEYS.firebaseConfig, text);
   dom.status.textContent = "Firebase config ulozeny";
 }
@@ -1436,6 +1489,54 @@ function applyTemplate() {
   dom.frameStyle.value = preset.frame;
   dom.canvasFormat.value = preset.format;
   render();
+}
+
+function setupCollapsiblePanels() {
+  const saved = readJson(STORAGE_KEYS.collapsedPanels, null);
+  const collapsed = new Set(saved || []);
+
+  document.querySelectorAll(".control-pane .panel").forEach((panel, index) => {
+    const title = Array.from(panel.children).find((child) => child.classList && child.classList.contains("panel-title"));
+    if (!title || panel.classList.contains("collapsible")) return;
+
+    const body = document.createElement("div");
+    body.className = "panel-body";
+    Array.from(panel.children).forEach((child) => {
+      if (child !== title) body.appendChild(child);
+    });
+    panel.appendChild(body);
+    panel.classList.add("collapsible");
+
+    const label = title.querySelector("span");
+    if (label && !label.classList.contains("panel-title-main")) label.classList.add("panel-title-main");
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "collapse-toggle";
+    button.setAttribute("aria-label", "Zbalit alebo rozbalit sekciu");
+    title.appendChild(button);
+
+    const panelName = label ? label.textContent.trim() : `panel-${index}`;
+    const defaultCollapsed = saved ? collapsed.has(panelName) : index > 1;
+    panel.classList.toggle("collapsed", defaultCollapsed);
+    button.setAttribute("aria-expanded", String(!defaultCollapsed));
+
+    const toggle = () => {
+      const isCollapsed = !panel.classList.contains("collapsed");
+      panel.classList.toggle("collapsed", isCollapsed);
+      button.setAttribute("aria-expanded", String(!isCollapsed));
+      const next = new Set(readJson(STORAGE_KEYS.collapsedPanels, []));
+      if (isCollapsed) next.add(panelName);
+      else next.delete(panelName);
+      writeJson(STORAGE_KEYS.collapsedPanels, Array.from(next));
+    };
+
+    title.addEventListener("click", (event) => {
+      if (event.target.closest(".collapse-toggle") || event.target === title || event.target.closest(".panel-title-main") || event.target.closest(".badge")) {
+        toggle();
+      }
+    });
+  });
 }
 
 function setupEvents() {
@@ -1559,6 +1660,7 @@ function setupEvents() {
 function boot() {
   const firebaseConfig = localStorage.getItem(STORAGE_KEYS.firebaseConfig);
   if (firebaseConfig) dom.firebaseConfig.value = firebaseConfig;
+  setupCollapsiblePanels();
   loadBrandKit();
   setActiveContentFields();
   renderLists();

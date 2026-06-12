@@ -82,6 +82,7 @@ button.primary {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 22px;
+  overflow: hidden;
 }
 
 .topbar,
@@ -116,8 +117,8 @@ button.primary {
 
 h1 {
   margin: 0;
-  font-size: clamp(32px, 4.2vw, 64px);
-  line-height: 0.98;
+  font-size: clamp(30px, 3.2vw, 52px);
+  line-height: 1.02;
   letter-spacing: 0;
 }
 
@@ -162,11 +163,15 @@ h2 {
   min-height: 0;
   display: grid;
   place-items: center;
+  overflow: hidden;
+  padding: 4px;
 }
 
 #qrCanvas {
-  width: min(72vh, 100%);
-  max-width: 820px;
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
   height: auto;
   border-radius: 30px;
   background: #ffffff;
@@ -205,6 +210,56 @@ h2 {
   margin-bottom: 16px;
   font-size: 17px;
   font-weight: 750;
+}
+
+.panel.collapsible .panel-title {
+  cursor: pointer;
+  gap: 12px;
+}
+
+.panel.collapsible.collapsed .panel-title {
+  margin-bottom: 0;
+}
+
+.panel.collapsible.collapsed .panel-body {
+  display: none;
+}
+
+.panel-title-main {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-title .badge {
+  margin-left: auto;
+}
+
+.collapse-toggle {
+  flex: 0 0 auto;
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.collapse-toggle::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform 160ms ease;
+}
+
+.panel.collapsed .collapse-toggle::before {
+  transform: rotate(-45deg);
 }
 
 label {

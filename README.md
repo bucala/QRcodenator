@@ -8,6 +8,6 @@ Apple-style QR studio with visual patterns, frames, templates, logo/icon support
 2. Enable Authentication with Email/Password.
 3. Enable Cloud Firestore.
 4. Publish the included `firestore.rules`.
-5. Paste the Firebase web config JSON into the app.
+5. Paste the Firebase web config JSON into the app. The app also accepts the full `const firebaseConfig = { ... }` snippet from the Firebase console and stores only the config object.
 
 Cloud projects are encrypted in the browser before Firestore write. The Firebase password authenticates the account; the separate Vault phrase derives the AES-GCM key and is never stored or sent to Firebase.
