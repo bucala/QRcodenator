@@ -1,32 +1,99 @@
 const dom = {
   canvas: document.querySelector("#qrCanvas"),
   status: document.querySelector("#statusPill"),
+  readabilityScore: document.querySelector("#readabilityScore"),
+  readabilityNotes: document.querySelector("#readabilityNotes"),
+  accountState: document.querySelector("#accountState"),
+  firebaseConfig: document.querySelector("#firebaseConfig"),
+  accountEmail: document.querySelector("#accountEmail"),
+  accountPassword: document.querySelector("#accountPassword"),
+  vaultPassphrase: document.querySelector("#vaultPassphrase"),
+  saveFirebaseConfig: document.querySelector("#saveFirebaseConfig"),
+  signUp: document.querySelector("#signUp"),
+  signIn: document.querySelector("#signIn"),
+  signOut: document.querySelector("#signOut"),
+  contentMode: document.querySelector("#contentMode"),
   text: document.querySelector("#qrText"),
+  urlValue: document.querySelector("#urlValue"),
+  textValue: document.querySelector("#textValue"),
+  emailTo: document.querySelector("#emailTo"),
+  emailSubject: document.querySelector("#emailSubject"),
+  emailBody: document.querySelector("#emailBody"),
+  phoneValue: document.querySelector("#phoneValue"),
+  smsPhone: document.querySelector("#smsPhone"),
+  smsMessage: document.querySelector("#smsMessage"),
+  wifiSsid: document.querySelector("#wifiSsid"),
+  wifiPassword: document.querySelector("#wifiPassword"),
+  wifiEncryption: document.querySelector("#wifiEncryption"),
+  wifiHidden: document.querySelector("#wifiHidden"),
+  vcardFirst: document.querySelector("#vcardFirst"),
+  vcardLast: document.querySelector("#vcardLast"),
+  vcardOrg: document.querySelector("#vcardOrg"),
+  vcardPhone: document.querySelector("#vcardPhone"),
+  vcardEmail: document.querySelector("#vcardEmail"),
+  vcardUrl: document.querySelector("#vcardUrl"),
+  eventTitle: document.querySelector("#eventTitle"),
+  eventStart: document.querySelector("#eventStart"),
+  eventEnd: document.querySelector("#eventEnd"),
+  eventLocation: document.querySelector("#eventLocation"),
+  eventDescription: document.querySelector("#eventDescription"),
+  geoLat: document.querySelector("#geoLat"),
+  geoLng: document.querySelector("#geoLng"),
   labelTitle: document.querySelector("#labelTitle"),
+  labelCta: document.querySelector("#labelCta"),
   labelCaption: document.querySelector("#labelCaption"),
+  labelTop: document.querySelector("#labelTop"),
+  labelFooter: document.querySelector("#labelFooter"),
+  fontStyle: document.querySelector("#fontStyle"),
+  textScale: document.querySelector("#textScale"),
+  template: document.querySelector("#templateStyle"),
   pattern: document.querySelector("#patternStyle"),
   eyeStyle: document.querySelector("#eyeStyle"),
+  cornerStyle: document.querySelector("#cornerStyle"),
   foreground: document.querySelector("#foregroundColor"),
   background: document.querySelector("#backgroundColor"),
   accent: document.querySelector("#accentColor"),
+  gradientStyle: document.querySelector("#gradientStyle"),
+  backgroundStyle: document.querySelector("#backgroundStyle"),
+  frameStyle: document.querySelector("#frameStyle"),
+  canvasFormat: document.querySelector("#canvasFormat"),
+  centerIcon: document.querySelector("#centerIcon"),
   logoInput: document.querySelector("#logoInput"),
   logoSize: document.querySelector("#logoSize"),
   logoSizeValue: document.querySelector("#logoSizeValue"),
+  logoOffset: document.querySelector("#logoOffset"),
   logoPlate: document.querySelector("#logoPlate"),
   exportSize: document.querySelector("#exportSize"),
   errorCorrection: document.querySelector("#errorCorrection"),
   quietZone: document.querySelector("#quietZone"),
   quietZoneValue: document.querySelector("#quietZoneValue"),
+  printBlur: document.querySelector("#printBlur"),
+  printBlurValue: document.querySelector("#printBlurValue"),
   downloadPng: document.querySelector("#downloadPng"),
+  downloadJpg: document.querySelector("#downloadJpg"),
   downloadSvg: document.querySelector("#downloadSvg"),
+  downloadPdf: document.querySelector("#downloadPdf"),
   copyPng: document.querySelector("#copyPng"),
+  copySvg: document.querySelector("#copySvg"),
   swatches: document.querySelector("#swatches"),
+  projectName: document.querySelector("#projectName"),
+  saveLocal: document.querySelector("#saveLocal"),
+  saveCloud: document.querySelector("#saveCloud"),
+  loadCloud: document.querySelector("#loadCloud"),
+  saveBrand: document.querySelector("#saveBrand"),
+  historyList: document.querySelector("#historyList"),
+  projectList: document.querySelector("#projectList"),
 };
 
 const state = {
   logoImage: null,
   logoDataUrl: "",
   lastQr: null,
+  lastOptions: null,
+  currentUser: null,
+  firebase: null,
+  vaultSalt: null,
+  suppressRawSync: false,
 };
 
 const TOTAL_CODEWORDS = [0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346];
@@ -56,6 +123,28 @@ const ALIGNMENT_POSITIONS = {
 };
 const FORMAT_BITS = { L: 1, M: 0, Q: 3, H: 2 };
 const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+const STORAGE_KEYS = {
+  firebaseConfig: "qrcodenator.firebaseConfig",
+  projects: "qrcodenator.projects",
+  history: "qrcodenator.history",
+  brand: "qrcodenator.brand",
+  vaultSalt: "qrcodenator.vaultSalt",
+};
+const FIREBASE_VERSION = "12.14.0";
+const FIREBASE_IMPORTS = {
+  app: `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`,
+  auth: `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-auth.js`,
+  firestore: `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`,
+};
+const TEMPLATE_PRESETS = {
+  apple: { fg: "#111111", bg: "#f7f7f5", accent: "#007aff", pattern: "rounded", frame: "none", format: "card" },
+  event: { fg: "#14213d", bg: "#f6f8ff", accent: "#ef476f", pattern: "dots", frame: "ticket", format: "story" },
+  restaurant: { fg: "#1f2933", bg: "#fff8ef", accent: "#d97706", pattern: "weave", frame: "line", format: "card" },
+  business: { fg: "#101828", bg: "#f8fafc", accent: "#475467", pattern: "rounded", frame: "shadow", format: "card" },
+  wifi: { fg: "#073b4c", bg: "#f0fffb", accent: "#06d6a0", pattern: "rounded", frame: "badge", format: "square" },
+  product: { fg: "#221c35", bg: "#fbf8ff", accent: "#7c3aed", pattern: "diamond", frame: "glass", format: "square" },
+};
 
 const GF = (() => {
   const exp = Array(512).fill(0);
@@ -548,62 +637,384 @@ function drawEye(ctx, x, y, cell, style, colors) {
   ctx.restore();
 }
 
+function safeValue(element) {
+  return element ? element.value.trim() : "";
+}
+
+function escapeWifi(value) {
+  return value.replace(/([\\;,":])/g, "\\$1");
+}
+
+function normalizeUrl(value) {
+  if (!value) return "https://example.com";
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return value;
+  return `https://${value}`;
+}
+
+function formatDateTimeLocal(value) {
+  if (!value) return "";
+  return value.replace(/[-:]/g, "").replace("T", "00").slice(0, 15);
+}
+
+function buildQrPayload() {
+  switch (dom.contentMode.value) {
+    case "url":
+      return normalizeUrl(safeValue(dom.urlValue));
+    case "text":
+      return safeValue(dom.textValue) || " ";
+    case "email": {
+      const to = safeValue(dom.emailTo);
+      const params = new URLSearchParams();
+      if (safeValue(dom.emailSubject)) params.set("subject", safeValue(dom.emailSubject));
+      if (safeValue(dom.emailBody)) params.set("body", safeValue(dom.emailBody));
+      return `mailto:${to}${params.toString() ? `?${params}` : ""}`;
+    }
+    case "phone":
+      return `tel:${safeValue(dom.phoneValue)}`;
+    case "sms":
+      return `SMSTO:${safeValue(dom.smsPhone)}:${safeValue(dom.smsMessage)}`;
+    case "wifi": {
+      const encryption = dom.wifiEncryption.value === "nopass" ? "nopass" : dom.wifiEncryption.value;
+      return `WIFI:T:${encryption};S:${escapeWifi(safeValue(dom.wifiSsid))};P:${escapeWifi(safeValue(dom.wifiPassword))};H:${dom.wifiHidden.checked ? "true" : "false"};;`;
+    }
+    case "vcard":
+      return [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        `N:${safeValue(dom.vcardLast)};${safeValue(dom.vcardFirst)};;;`,
+        `FN:${[safeValue(dom.vcardFirst), safeValue(dom.vcardLast)].filter(Boolean).join(" ")}`,
+        safeValue(dom.vcardOrg) ? `ORG:${safeValue(dom.vcardOrg)}` : "",
+        safeValue(dom.vcardPhone) ? `TEL:${safeValue(dom.vcardPhone)}` : "",
+        safeValue(dom.vcardEmail) ? `EMAIL:${safeValue(dom.vcardEmail)}` : "",
+        safeValue(dom.vcardUrl) ? `URL:${normalizeUrl(safeValue(dom.vcardUrl))}` : "",
+        "END:VCARD",
+      ].filter(Boolean).join("\n");
+    case "event":
+      return [
+        "BEGIN:VEVENT",
+        `SUMMARY:${safeValue(dom.eventTitle) || "Event"}`,
+        safeValue(dom.eventStart) ? `DTSTART:${formatDateTimeLocal(safeValue(dom.eventStart))}` : "",
+        safeValue(dom.eventEnd) ? `DTEND:${formatDateTimeLocal(safeValue(dom.eventEnd))}` : "",
+        safeValue(dom.eventLocation) ? `LOCATION:${safeValue(dom.eventLocation)}` : "",
+        safeValue(dom.eventDescription) ? `DESCRIPTION:${safeValue(dom.eventDescription)}` : "",
+        "END:VEVENT",
+      ].filter(Boolean).join("\n");
+    case "location":
+      return `geo:${safeValue(dom.geoLat) || "48.1486"},${safeValue(dom.geoLng) || "17.1077"}`;
+    default:
+      return safeValue(dom.text) || " ";
+  }
+}
+
+function syncRawFromFields() {
+  state.suppressRawSync = true;
+  dom.text.value = buildQrPayload();
+  state.suppressRawSync = false;
+}
+
+function setActiveContentFields() {
+  document.querySelectorAll("[data-mode-field]").forEach((field) => {
+    field.classList.toggle("active", field.dataset.modeField === dom.contentMode.value);
+  });
+}
+
+function getFontFamily(style) {
+  if (style === "serif") return "Georgia, Times New Roman, serif";
+  if (style === "mono") return "SFMono-Regular, Consolas, monospace";
+  return "-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+}
+
+function hexToRgb(hex) {
+  const clean = hex.replace("#", "");
+  const value = parseInt(clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean, 16);
+  return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
+}
+
+function relativeLuminance(hex) {
+  const { r, g, b } = hexToRgb(hex);
+  const channel = (value) => {
+    const s = value / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+function contrastRatio(a, b) {
+  const light = Math.max(relativeLuminance(a), relativeLuminance(b));
+  const dark = Math.min(relativeLuminance(a), relativeLuminance(b));
+  return (light + 0.05) / (dark + 0.05);
+}
+
+function getReadability(options) {
+  const notes = [];
+  let score = 100;
+  const contrast = contrastRatio(options.foreground, options.background);
+  if (contrast < 4.5) {
+    score -= 35;
+    notes.push("Nizky kontrast farieb.");
+  }
+  if (options.logoSize > 22) {
+    score -= 20;
+    notes.push("Logo je velke, skuste max 22%.");
+  }
+  if (options.quietZone < 4) {
+    score -= 15;
+    notes.push("Okraj je mensi ako odporucana hodnota 4.");
+  }
+  if (options.gradient !== "none") {
+    score -= 6;
+    notes.push("Gradient moze znizit citatelnost pri tlaci.");
+  }
+  if (options.pattern === "diamond" || options.pattern === "dots") {
+    score -= 5;
+    notes.push("Dekorativny pattern otestujte skenerom.");
+  }
+  score = Math.max(0, Math.round(score));
+  return { score, notes: notes.length ? notes : ["Kontrast a logo su v norme."] };
+}
+
 function getOptions() {
   return {
     text: dom.text.value.trim() || " ",
+    mode: dom.contentMode.value,
     title: dom.labelTitle.value.trim(),
+    cta: dom.labelCta.value.trim(),
     caption: dom.labelCaption.value.trim(),
+    topLabel: dom.labelTop.value.trim(),
+    footer: dom.labelFooter.value.trim(),
+    fontStyle: dom.fontStyle.value,
+    textScale: Number(dom.textScale.value),
+    template: dom.template.value,
     pattern: dom.pattern.value,
     eyeStyle: dom.eyeStyle.value,
+    cornerStyle: dom.cornerStyle.value,
     foreground: dom.foreground.value,
     background: dom.background.value,
     accent: dom.accent.value,
+    gradient: dom.gradientStyle.value,
+    backgroundStyle: dom.backgroundStyle.value,
+    frameStyle: dom.frameStyle.value,
+    canvasFormat: dom.canvasFormat.value,
+    centerIcon: dom.centerIcon.value,
     logoSize: Number(dom.logoSize.value),
+    logoOffset: Number(dom.logoOffset.value),
     logoPlate: dom.logoPlate.checked,
     exportSize: Number(dom.exportSize.value),
     quietZone: Number(dom.quietZone.value),
     ecl: dom.errorCorrection.value,
+    printBlur: Number(dom.printBlur.value),
   };
+}
+
+function getCanvasMetrics(options) {
+  const base = options.exportSize;
+  if (options.canvasFormat === "story") return { width: base, height: Math.round(base * 1.72), qr: Math.round(base * 0.78) };
+  if (options.canvasFormat === "a4") return { width: base, height: Math.round(base * 1.414), qr: Math.round(base * 0.68) };
+  if (options.canvasFormat === "square") return { width: base, height: base, qr: Math.round(base * 0.72) };
+  return { width: base, height: Math.round(base * 1.18), qr: Math.round(base * 0.72) };
+}
+
+function makeForegroundStyle(ctx, options, x, y, size) {
+  if (options.gradient === "linear") {
+    const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
+    gradient.addColorStop(0, options.foreground);
+    gradient.addColorStop(1, options.accent);
+    return gradient;
+  }
+  if (options.gradient === "radial") {
+    const gradient = ctx.createRadialGradient(x + size / 2, y + size / 2, size * 0.1, x + size / 2, y + size / 2, size * 0.72);
+    gradient.addColorStop(0, options.accent);
+    gradient.addColorStop(1, options.foreground);
+    return gradient;
+  }
+  return options.foreground;
+}
+
+function fillBackground(ctx, width, height, options) {
+  if (options.backgroundStyle === "transparent") {
+    ctx.clearRect(0, 0, width, height);
+    return;
+  }
+  ctx.fillStyle = options.background;
+  ctx.fillRect(0, 0, width, height);
+  if (options.backgroundStyle === "soft") {
+    const glow = ctx.createRadialGradient(width * 0.2, 0, 0, width * 0.2, 0, width * 0.9);
+    glow.addColorStop(0, `${options.accent}33`);
+    glow.addColorStop(1, `${options.accent}00`);
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, height);
+  }
+  if (options.backgroundStyle === "grid") {
+    ctx.strokeStyle = "rgba(29,29,31,0.06)";
+    ctx.lineWidth = Math.max(1, width / 900);
+    const step = width / 24;
+    for (let x = 0; x <= width; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= height; y += step) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+  }
+}
+
+function cardRadius(options, size) {
+  if (options.cornerStyle === "sharp") return 0;
+  if (options.cornerStyle === "pill") return size * 0.16;
+  if (options.cornerStyle === "cut") return size * 0.02;
+  return size * 0.07;
+}
+
+function drawFrame(ctx, x, y, size, options) {
+  if (options.frameStyle === "none") return;
+  const radius = cardRadius(options, size);
+  ctx.save();
+  if (options.frameStyle === "shadow") {
+    ctx.shadowColor = "rgba(20,20,30,0.22)";
+    ctx.shadowBlur = size * 0.045;
+    ctx.shadowOffsetY = size * 0.025;
+    ctx.fillStyle = "rgba(255,255,255,0.62)";
+    roundRect(ctx, x - size * 0.05, y - size * 0.05, size * 1.1, size * 1.1, radius);
+    ctx.fill();
+  }
+  if (options.frameStyle === "glass") {
+    ctx.fillStyle = "rgba(255,255,255,0.34)";
+    roundRect(ctx, x - size * 0.065, y - size * 0.065, size * 1.13, size * 1.13, radius);
+    ctx.fill();
+  }
+  if (options.frameStyle === "line" || options.frameStyle === "glass" || options.frameStyle === "ticket" || options.frameStyle === "badge") {
+    ctx.strokeStyle = options.frameStyle === "badge" ? options.accent : "rgba(29,29,31,0.14)";
+    ctx.lineWidth = Math.max(3, size * 0.01);
+    roundRect(ctx, x - size * 0.04, y - size * 0.04, size * 1.08, size * 1.08, radius);
+    ctx.stroke();
+  }
+  if (options.frameStyle === "ticket") {
+    ctx.fillStyle = options.background;
+    const notch = size * 0.06;
+    [["left", x - size * 0.04, y + size * 0.5], ["right", x + size * 1.04, y + size * 0.5]].forEach(([, nx, ny]) => {
+      ctx.beginPath();
+      ctx.arc(nx, ny, notch, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  ctx.restore();
+}
+
+function drawCenterIcon(ctx, icon, cx, cy, size, color) {
+  if (icon === "none") return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(4, size * 0.08);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const r = size / 2;
+  if (icon === "wifi") {
+    for (let i = 0; i < 3; i += 1) {
+      ctx.beginPath();
+      ctx.arc(cx, cy + r * 0.36, r * (0.26 + i * 0.24), Math.PI * 1.18, Math.PI * 1.82);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(cx, cy + r * 0.48, r * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (icon === "mail") {
+    roundRect(ctx, cx - r * 0.72, cy - r * 0.48, r * 1.44, r * 0.96, r * 0.12);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - r * 0.68, cy - r * 0.38);
+    ctx.lineTo(cx, cy + r * 0.1);
+    ctx.lineTo(cx + r * 0.68, cy - r * 0.38);
+    ctx.stroke();
+  } else if (icon === "contact") {
+    ctx.beginPath();
+    ctx.arc(cx, cy - r * 0.24, r * 0.24, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy + r * 0.62, r * 0.52, Math.PI * 1.12, Math.PI * 1.88);
+    ctx.stroke();
+  } else if (icon === "map") {
+    ctx.beginPath();
+    ctx.arc(cx, cy - r * 0.12, r * 0.42, Math.PI * 0.05, Math.PI * 1.95);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + r * 0.76);
+    ctx.lineTo(cx - r * 0.28, cy + r * 0.18);
+    ctx.lineTo(cx + r * 0.28, cy + r * 0.18);
+    ctx.closePath();
+    ctx.fill();
+  } else if (icon === "pay") {
+    ctx.font = `800 ${Math.round(size * 0.86)}px ${getFontFamily("system")}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("$", cx, cy + size * 0.02);
+  } else if (icon === "instagram") {
+    roundRect(ctx, cx - r * 0.58, cy - r * 0.58, r * 1.16, r * 1.16, r * 0.28);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.24, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + r * 0.32, cy - r * 0.32, r * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.22, cy, r * 0.28, Math.PI * 0.25, Math.PI * 1.75);
+    ctx.arc(cx + r * 0.22, cy, r * 0.28, Math.PI * 1.25, Math.PI * 2.75);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function drawQrToCanvas(canvas, qr, options) {
   const ctx = canvas.getContext("2d");
-  const qrPixels = options.exportSize;
-  const labelHeight = (options.title ? 82 : 0) + (options.caption ? 46 : 0) + 42;
-  canvas.width = qrPixels;
-  canvas.height = qrPixels + labelHeight;
+  const metrics = getCanvasMetrics(options);
+  const qrPixels = metrics.qr;
+  canvas.width = metrics.width;
+  canvas.height = metrics.height;
 
   const colors = {
-    foreground: options.foreground,
+    foreground: makeForegroundStyle(ctx, options, 0, 0, qrPixels),
     background: options.background,
     accent: options.accent,
   };
 
-  ctx.fillStyle = colors.background;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  fillBackground(ctx, canvas.width, canvas.height, options);
 
   const totalModules = qr.size + options.quietZone * 2;
   const cell = qrPixels / totalModules;
+  const qrX = Math.round((canvas.width - qrPixels) / 2);
+  const topTextSpace = options.topLabel || options.cta ? canvas.height * 0.12 : canvas.height * 0.08;
+  const qrY = Math.round(Math.min(canvas.height - qrPixels - canvas.height * 0.22, topTextSpace));
   const offset = options.quietZone * cell;
   const modules = qr.modules;
 
+  drawFrame(ctx, qrX, qrY, qrPixels, options);
+
+  if (options.printBlur > 0) ctx.filter = `blur(${options.printBlur * 0.22}px)`;
   for (let y = 0; y < qr.size; y += 1) {
     for (let x = 0; x < qr.size; x += 1) {
       if (!modules[y][x] || isInFinder(x, y, qr.size)) continue;
-      const px = offset + x * cell;
-      const py = offset + y * cell;
+      const px = qrX + offset + x * cell;
+      const py = qrY + offset + y * cell;
       drawModule(ctx, px, py, cell, options.pattern, colors.foreground, modules, x, y);
     }
   }
 
-  drawEye(ctx, offset, offset, cell, options.eyeStyle, colors);
-  drawEye(ctx, offset + (qr.size - 7) * cell, offset, cell, options.eyeStyle, colors);
-  drawEye(ctx, offset, offset + (qr.size - 7) * cell, cell, options.eyeStyle, colors);
+  drawEye(ctx, qrX + offset, qrY + offset, cell, options.eyeStyle, colors);
+  drawEye(ctx, qrX + offset + (qr.size - 7) * cell, qrY + offset, cell, options.eyeStyle, colors);
+  drawEye(ctx, qrX + offset, qrY + offset + (qr.size - 7) * cell, cell, options.eyeStyle, colors);
+  ctx.filter = "none";
 
-  if (state.logoImage && options.logoSize > 0) {
+  if ((state.logoImage || options.centerIcon !== "none") && options.logoSize > 0) {
     const logoBox = qrPixels * (options.logoSize / 100);
-    const centerX = qrPixels / 2;
-    const centerY = qrPixels / 2;
+    const centerX = qrX + qrPixels / 2;
+    const centerY = qrY + qrPixels / 2 + qrPixels * (options.logoOffset / 100);
     const plate = logoBox * 1.22;
 
     if (options.logoPlate) {
@@ -615,25 +1026,49 @@ function drawQrToCanvas(canvas, qr, options) {
       ctx.stroke();
     }
 
-    ctx.save();
-    roundRect(ctx, centerX - logoBox / 2, centerY - logoBox / 2, logoBox, logoBox, logoBox * 0.2);
-    ctx.clip();
-    ctx.drawImage(state.logoImage, centerX - logoBox / 2, centerY - logoBox / 2, logoBox, logoBox);
-    ctx.restore();
+    if (state.logoImage) {
+      ctx.save();
+      roundRect(ctx, centerX - logoBox / 2, centerY - logoBox / 2, logoBox, logoBox, logoBox * 0.2);
+      ctx.clip();
+      ctx.drawImage(state.logoImage, centerX - logoBox / 2, centerY - logoBox / 2, logoBox, logoBox);
+      ctx.restore();
+    } else {
+      drawCenterIcon(ctx, options.centerIcon, centerX, centerY, logoBox * 0.8, options.accent);
+    }
   }
 
-  let textY = qrPixels + 34;
+  const fontFamily = getFontFamily(options.fontStyle);
+  const scale = options.textScale;
   ctx.textAlign = "center";
-  ctx.fillStyle = colors.foreground;
+  ctx.textBaseline = "alphabetic";
+  if (options.topLabel) {
+    ctx.fillStyle = options.accent;
+    ctx.font = `700 ${Math.round(qrPixels * 0.028 * scale)}px ${fontFamily}`;
+    ctx.fillText(options.topLabel, canvas.width / 2, Math.max(36, qrY * 0.55));
+  }
+  if (options.cta) {
+    ctx.fillStyle = options.foreground;
+    ctx.font = `800 ${Math.round(qrPixels * 0.05 * scale)}px ${fontFamily}`;
+    ctx.fillText(options.cta, canvas.width / 2, qrY + qrPixels + qrPixels * 0.075);
+  }
+  let textY = qrY + qrPixels + qrPixels * (options.cta ? 0.15 : 0.09);
   if (options.title) {
-    ctx.font = `700 ${Math.round(qrPixels * 0.042)}px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif`;
-    ctx.fillText(options.title, qrPixels / 2, textY + qrPixels * 0.038);
-    textY += 70;
+    ctx.fillStyle = options.foreground;
+    const weight = options.fontStyle === "bold" ? 850 : 700;
+    ctx.font = `${weight} ${Math.round(qrPixels * 0.04 * scale)}px ${fontFamily}`;
+    ctx.fillText(options.title, canvas.width / 2, textY);
+    textY += qrPixels * 0.065 * scale;
   }
   if (options.caption) {
     ctx.fillStyle = "rgba(29,29,31,0.62)";
-    ctx.font = `500 ${Math.round(qrPixels * 0.024)}px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif`;
-    ctx.fillText(options.caption, qrPixels / 2, textY);
+    ctx.font = `500 ${Math.round(qrPixels * 0.024 * scale)}px ${fontFamily}`;
+    ctx.fillText(options.caption, canvas.width / 2, textY);
+    textY += qrPixels * 0.048 * scale;
+  }
+  if (options.footer) {
+    ctx.fillStyle = "rgba(29,29,31,0.46)";
+    ctx.font = `600 ${Math.round(qrPixels * 0.02 * scale)}px ${fontFamily}`;
+    ctx.fillText(options.footer, canvas.width / 2, Math.min(canvas.height - 28, textY));
   }
 }
 
@@ -706,16 +1141,23 @@ function escapeXml(value) {
 }
 
 function render() {
+  if (!state.suppressRawSync) syncRawFromFields();
   const options = getOptions();
+  state.lastOptions = options;
   dom.logoSizeValue.textContent = `${options.logoSize}%`;
   dom.quietZoneValue.textContent = String(options.quietZone);
+  dom.printBlurValue.textContent = String(options.printBlur);
   document.documentElement.style.setProperty("--accent", options.accent);
 
   try {
     const qr = generateQr(options.text, options.ecl);
     state.lastQr = qr;
     drawQrToCanvas(dom.canvas, qr, options);
+    const readability = getReadability(options);
     dom.status.textContent = `Verzia ${qr.version} · maska ${qr.mask}`;
+    dom.readabilityScore.textContent = `Skore ${readability.score}`;
+    dom.readabilityScore.className = `score-pill ${readability.score >= 82 ? "good" : readability.score >= 62 ? "warn" : "bad"}`;
+    dom.readabilityNotes.textContent = readability.notes.join(" ");
   } catch (error) {
     dom.status.textContent = "Obsah je príliš dlhý";
     dom.status.classList.remove("shake");
@@ -735,11 +1177,296 @@ function getFileStamp() {
   return new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
 }
 
+function readJson(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function collectFormState() {
+  const fields = {};
+  document.querySelectorAll("input, textarea, select").forEach((control) => {
+    if (!control.id || ["accountPassword", "vaultPassphrase"].includes(control.id)) return;
+    fields[control.id] = control.type === "checkbox" ? control.checked : control.value;
+  });
+  return {
+    id: crypto.randomUUID(),
+    name: safeValue(dom.projectName) || "QR projekt",
+    createdAt: new Date().toISOString(),
+    fields,
+    logoDataUrl: state.logoDataUrl,
+  };
+}
+
+function applyFormState(project) {
+  if (!project || !project.fields) return;
+  Object.entries(project.fields).forEach(([id, value]) => {
+    const control = document.getElementById(id);
+    if (!control) return;
+    if (control.type === "checkbox") control.checked = Boolean(value);
+    else control.value = value;
+  });
+  if (project.logoDataUrl) {
+    const image = new Image();
+    image.onload = () => {
+      state.logoImage = image;
+      state.logoDataUrl = project.logoDataUrl;
+      setActiveContentFields();
+      render();
+    };
+    image.src = project.logoDataUrl;
+  } else {
+    state.logoImage = null;
+    state.logoDataUrl = "";
+  }
+  setActiveContentFields();
+  render();
+}
+
+function saveHistory() {
+  const history = readJson(STORAGE_KEYS.history, []);
+  const snapshot = collectFormState();
+  const next = [snapshot, ...history.filter((item) => item.text !== snapshot.fields.qrText)].slice(0, 10);
+  writeJson(STORAGE_KEYS.history, next);
+  renderLists();
+}
+
+function saveLocalProject() {
+  const projects = readJson(STORAGE_KEYS.projects, []);
+  const snapshot = collectFormState();
+  const next = [snapshot, ...projects].slice(0, 30);
+  writeJson(STORAGE_KEYS.projects, next);
+  renderLists();
+  dom.status.textContent = "Projekt ulozeny lokalne";
+}
+
+function saveBrandKit() {
+  writeJson(STORAGE_KEYS.brand, {
+    foreground: dom.foreground.value,
+    background: dom.background.value,
+    accent: dom.accent.value,
+    fontStyle: dom.fontStyle.value,
+    logoDataUrl: state.logoDataUrl,
+  });
+  dom.status.textContent = "Brand kit ulozeny";
+}
+
+function loadBrandKit() {
+  const brand = readJson(STORAGE_KEYS.brand, null);
+  if (!brand) return;
+  dom.foreground.value = brand.foreground || dom.foreground.value;
+  dom.background.value = brand.background || dom.background.value;
+  dom.accent.value = brand.accent || dom.accent.value;
+  dom.fontStyle.value = brand.fontStyle || dom.fontStyle.value;
+  if (brand.logoDataUrl) {
+    const image = new Image();
+    image.onload = () => {
+      state.logoImage = image;
+      state.logoDataUrl = brand.logoDataUrl;
+      render();
+    };
+    image.src = brand.logoDataUrl;
+  }
+}
+
+function renderLists() {
+  const renderItem = (project) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "item-card";
+    button.innerHTML = `<strong>${escapeXml(project.name || "QR projekt")}</strong><span>${new Date(project.createdAt).toLocaleString("sk-SK")}</span>`;
+    button.addEventListener("click", () => applyFormState(project));
+    return button;
+  };
+  dom.historyList.replaceChildren(...readJson(STORAGE_KEYS.history, []).map(renderItem));
+  dom.projectList.replaceChildren(...readJson(STORAGE_KEYS.projects, []).map(renderItem));
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  new Uint8Array(bytes).forEach((byte) => { binary += String.fromCharCode(byte); });
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  const binary = atob(value);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function getOrCreateVaultSalt() {
+  let salt = localStorage.getItem(STORAGE_KEYS.vaultSalt);
+  if (!salt) {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    salt = bytesToBase64(bytes);
+    localStorage.setItem(STORAGE_KEYS.vaultSalt, salt);
+  }
+  return base64ToBytes(salt);
+}
+
+async function deriveVaultKey() {
+  const passphrase = dom.vaultPassphrase.value;
+  if (passphrase.length < 12) throw new Error("Vault fraza musi mat aspon 12 znakov.");
+  const material = await crypto.subtle.importKey("raw", encoder.encode(passphrase), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: getOrCreateVaultSalt(), iterations: 310000, hash: "SHA-256" },
+    material,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
+
+async function encryptProject(project) {
+  const key = await deriveVaultKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const plaintext = encoder.encode(JSON.stringify(project));
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plaintext);
+  return {
+    version: 1,
+    algorithm: "AES-GCM",
+    kdf: "PBKDF2-SHA-256",
+    iterations: 310000,
+    salt: localStorage.getItem(STORAGE_KEYS.vaultSalt),
+    iv: bytesToBase64(iv),
+    ciphertext: bytesToBase64(ciphertext),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function decryptProject(record) {
+  if (record.salt) localStorage.setItem(STORAGE_KEYS.vaultSalt, record.salt);
+  const key = await deriveVaultKey();
+  const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv: base64ToBytes(record.iv) }, key, base64ToBytes(record.ciphertext));
+  return JSON.parse(decoder.decode(plaintext));
+}
+
+async function initFirebase() {
+  if (state.firebase) return state.firebase;
+  const configText = localStorage.getItem(STORAGE_KEYS.firebaseConfig) || dom.firebaseConfig.value.trim();
+  if (!configText) throw new Error("Vlozte Firebase config JSON.");
+  const config = JSON.parse(configText);
+  const [{ initializeApp }, authMod, firestoreMod] = await Promise.all([
+    import(FIREBASE_IMPORTS.app),
+    import(FIREBASE_IMPORTS.auth),
+    import(FIREBASE_IMPORTS.firestore),
+  ]);
+  const app = initializeApp(config);
+  const auth = authMod.getAuth(app);
+  const db = firestoreMod.getFirestore(app);
+  authMod.onAuthStateChanged(auth, (user) => {
+    state.currentUser = user;
+    dom.accountState.textContent = user ? user.email : "Offline";
+  });
+  state.firebase = { app, auth, db, authMod, firestoreMod };
+  return state.firebase;
+}
+
+function saveFirebaseConfig() {
+  const text = dom.firebaseConfig.value.trim();
+  JSON.parse(text);
+  localStorage.setItem(STORAGE_KEYS.firebaseConfig, text);
+  dom.status.textContent = "Firebase config ulozeny";
+}
+
+async function signUp() {
+  const fb = await initFirebase();
+  const credential = await fb.authMod.createUserWithEmailAndPassword(fb.auth, safeValue(dom.accountEmail), dom.accountPassword.value);
+  state.currentUser = credential.user;
+  dom.accountState.textContent = credential.user.email;
+}
+
+async function signIn() {
+  const fb = await initFirebase();
+  const credential = await fb.authMod.signInWithEmailAndPassword(fb.auth, safeValue(dom.accountEmail), dom.accountPassword.value);
+  state.currentUser = credential.user;
+  dom.accountState.textContent = credential.user.email;
+}
+
+async function signOut() {
+  if (!state.firebase) return;
+  await state.firebase.authMod.signOut(state.firebase.auth);
+  state.currentUser = null;
+  dom.accountState.textContent = "Offline";
+}
+
+async function saveCloudProject() {
+  const fb = await initFirebase();
+  const user = fb.auth.currentUser;
+  if (!user) throw new Error("Najprv sa prihlaste.");
+  const encrypted = await encryptProject(collectFormState());
+  await fb.firestoreMod.setDoc(fb.firestoreMod.doc(fb.db, "users", user.uid, "projects", "active"), encrypted);
+  dom.status.textContent = "Cloud projekt ulozeny sifrovane";
+}
+
+async function loadCloudProject() {
+  const fb = await initFirebase();
+  const user = fb.auth.currentUser;
+  if (!user) throw new Error("Najprv sa prihlaste.");
+  const snap = await fb.firestoreMod.getDoc(fb.firestoreMod.doc(fb.db, "users", user.uid, "projects", "active"));
+  if (!snap.exists()) throw new Error("Cloud projekt zatial neexistuje.");
+  const project = await decryptProject(snap.data());
+  applyFormState(project);
+  dom.status.textContent = "Cloud projekt nacitany";
+}
+
+async function guarded(action) {
+  try {
+    await action();
+  } catch (error) {
+    dom.status.textContent = error.message || "Akcia zlyhala";
+    dom.status.classList.remove("shake");
+    void dom.status.offsetWidth;
+    dom.status.classList.add("shake");
+  }
+}
+
+function applyTemplate() {
+  const preset = TEMPLATE_PRESETS[dom.template.value];
+  if (!preset) return;
+  dom.foreground.value = preset.fg;
+  dom.background.value = preset.bg;
+  dom.accent.value = preset.accent;
+  dom.pattern.value = preset.pattern;
+  dom.frameStyle.value = preset.frame;
+  dom.canvasFormat.value = preset.format;
+  render();
+}
+
 function setupEvents() {
   document.querySelectorAll("input, textarea, select").forEach((control) => {
-    control.addEventListener("input", render);
-    control.addEventListener("change", render);
+    const shouldRender = !["firebaseConfig", "accountEmail", "accountPassword", "vaultPassphrase", "qrText"].includes(control.id);
+    if (shouldRender) {
+      control.addEventListener("input", render);
+      control.addEventListener("change", render);
+    }
   });
+
+  dom.contentMode.addEventListener("change", () => {
+    setActiveContentFields();
+    render();
+  });
+
+  dom.text.addEventListener("input", () => {
+    state.suppressRawSync = true;
+    render();
+    state.suppressRawSync = false;
+  });
+
+  dom.template.addEventListener("change", applyTemplate);
+  dom.saveFirebaseConfig.addEventListener("click", () => guarded(saveFirebaseConfig));
+  dom.signUp.addEventListener("click", () => guarded(signUp));
+  dom.signIn.addEventListener("click", () => guarded(signIn));
+  dom.signOut.addEventListener("click", () => guarded(signOut));
+  dom.saveLocal.addEventListener("click", saveLocalProject);
+  dom.saveBrand.addEventListener("click", saveBrandKit);
+  dom.saveCloud.addEventListener("click", () => guarded(saveCloudProject));
+  dom.loadCloud.addEventListener("click", () => guarded(loadCloudProject));
 
   dom.logoInput.addEventListener("change", () => {
     const file = dom.logoInput.files && dom.logoInput.files[0];
@@ -776,14 +1503,34 @@ function setupEvents() {
 
   dom.downloadPng.addEventListener("click", () => {
     render();
+    saveHistory();
     download(`qrcodenator-${getFileStamp()}.png`, dom.canvas.toDataURL("image/png"));
+  });
+
+  dom.downloadJpg.addEventListener("click", () => {
+    render();
+    saveHistory();
+    download(`qrcodenator-${getFileStamp()}.jpg`, dom.canvas.toDataURL("image/jpeg", 0.94));
   });
 
   dom.downloadSvg.addEventListener("click", () => {
     const options = getOptions();
     const qr = state.lastQr || generateQr(options.text, options.ecl);
     const blob = new Blob([generateSvg(qr, options)], { type: "image/svg+xml" });
+    saveHistory();
     download(`qrcodenator-${getFileStamp()}.svg`, URL.createObjectURL(blob));
+  });
+
+  dom.downloadPdf.addEventListener("click", () => {
+    render();
+    saveHistory();
+    const popup = window.open("", "_blank");
+    if (!popup) {
+      dom.status.textContent = "Pre PDF povolte popup okno";
+      return;
+    }
+    popup.document.write(`<!doctype html><title>QRcodenator PDF</title><style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#fff}img{max-width:100%;height:auto}@media print{button{display:none}}</style><button onclick="print()">Tlacit / ulozit PDF</button><img src="${dom.canvas.toDataURL("image/png")}">`);
+    popup.document.close();
   });
 
   dom.copyPng.addEventListener("click", async () => {
@@ -796,7 +1543,27 @@ function setupEvents() {
       dom.status.textContent = "Skopírované";
     }, "image/png");
   });
+
+  dom.copySvg.addEventListener("click", async () => {
+    if (!navigator.clipboard) {
+      dom.status.textContent = "Clipboard nepodporovany";
+      return;
+    }
+    const options = getOptions();
+    const qr = state.lastQr || generateQr(options.text, options.ecl);
+    await navigator.clipboard.writeText(generateSvg(qr, options));
+    dom.status.textContent = "SVG skopirovane";
+  });
 }
 
-setupEvents();
-render();
+function boot() {
+  const firebaseConfig = localStorage.getItem(STORAGE_KEYS.firebaseConfig);
+  if (firebaseConfig) dom.firebaseConfig.value = firebaseConfig;
+  loadBrandKit();
+  setActiveContentFields();
+  renderLists();
+  setupEvents();
+  render();
+}
+
+boot();

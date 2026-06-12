@@ -8,27 +8,72 @@
   </head>
   <body>
     <main class="shell">
-      <section class="preview-pane" aria-label="Náhľad QR kódu">
+      <section class="preview-pane" aria-label="Nahlad QR kodu">
         <header class="topbar">
           <div>
-            <p class="eyebrow">QRcodenator</p>
-            <h1>QR kódy s čistým štýlom</h1>
+            <p class="eyebrow">QRcodenator Studio</p>
+            <h1>Bezpecne QR studio</h1>
           </div>
-          <div class="status-pill" id="statusPill">Pripravené</div>
+          <div class="topbar-actions">
+            <div class="score-pill" id="readabilityScore">Skore 100</div>
+            <div class="status-pill" id="statusPill">Pripravene</div>
+          </div>
         </header>
 
         <div class="canvas-stage">
-          <canvas id="qrCanvas" width="960" height="1120" aria-label="Vygenerovaný QR kód"></canvas>
+          <canvas id="qrCanvas" width="960" height="1120" aria-label="Vygenerovany QR kod"></canvas>
         </div>
 
         <div class="actions">
-          <button class="primary" id="downloadPng" type="button">Stiahnuť PNG</button>
-          <button id="downloadSvg" type="button">Stiahnuť SVG</button>
-          <button id="copyPng" type="button">Kopírovať</button>
+          <button class="primary" id="downloadPng" type="button">PNG</button>
+          <button id="downloadJpg" type="button">JPG</button>
+          <button id="downloadSvg" type="button">SVG</button>
+          <button id="downloadPdf" type="button">PDF</button>
+          <button id="copyPng" type="button">Kopirovat</button>
+          <button id="copySvg" type="button">SVG clipboard</button>
         </div>
       </section>
 
-      <aside class="control-pane" aria-label="Nastavenia QR kódu">
+      <aside class="control-pane" aria-label="Nastavenia QR kodu">
+        <section class="panel account-panel">
+          <div class="panel-title">
+            <span>Account Vault</span>
+            <span class="badge" id="accountState">Offline</span>
+          </div>
+
+          <label>
+            Firebase config JSON
+            <textarea id="firebaseConfig" rows="4" spellcheck="false" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","appId":"..."}'></textarea>
+          </label>
+
+          <div class="two-col">
+            <label>
+              Email
+              <input id="accountEmail" type="email" autocomplete="email" placeholder="meno@email.sk" />
+            </label>
+            <label>
+              Heslo
+              <input id="accountPassword" type="password" autocomplete="current-password" placeholder="Firebase heslo" />
+            </label>
+          </div>
+
+          <label>
+            Vault fraza
+            <input id="vaultPassphrase" type="password" autocomplete="new-password" placeholder="Samostatna sifrovacia fraza" />
+          </label>
+
+          <div class="button-grid">
+            <button id="saveFirebaseConfig" type="button">Ulozit config</button>
+            <button id="signUp" type="button">Registracia</button>
+            <button class="primary" id="signIn" type="button">Prihlasit</button>
+            <button id="signOut" type="button">Odhlasit</button>
+          </div>
+
+          <div class="notice secure">
+            Cloud uklada iba zasifrovane projekty. Vault fraza sa neposiela do Firebase.
+          </div>
+        </section>
+
         <section class="panel">
           <div class="panel-title">
             <span>Obsah</span>
@@ -36,64 +81,186 @@
           </div>
 
           <label>
-            Dáta QR kódu
-            <textarea id="qrText" rows="5" spellcheck="false">https://example.com</textarea>
+            Typ QR
+            <select id="contentMode">
+              <option value="url">URL</option>
+              <option value="text">Text</option>
+              <option value="email">Email</option>
+              <option value="phone">Telefon</option>
+              <option value="sms">SMS</option>
+              <option value="wifi">Wi-Fi</option>
+              <option value="vcard">Kontakt vCard</option>
+              <option value="event">Kalendar event</option>
+              <option value="location">GPS poloha</option>
+            </select>
           </label>
+
+          <div class="content-fields">
+            <label data-mode-field="url">
+              URL adresa
+              <input id="urlValue" value="https://example.com" />
+            </label>
+
+            <label data-mode-field="text">
+              Text
+              <textarea id="textValue" rows="4" spellcheck="false">Ahoj z QRcodenatoru</textarea>
+            </label>
+
+            <div data-mode-field="email" class="field-group">
+              <label>Email<input id="emailTo" type="email" placeholder="kontakt@example.com" /></label>
+              <label>Predmet<input id="emailSubject" placeholder="Sprava z QR" /></label>
+              <label>Text<textarea id="emailBody" rows="3"></textarea></label>
+            </div>
+
+            <label data-mode-field="phone">
+              Telefon
+              <input id="phoneValue" type="tel" placeholder="+421..." />
+            </label>
+
+            <div data-mode-field="sms" class="field-group">
+              <label>Telefon<input id="smsPhone" type="tel" placeholder="+421..." /></label>
+              <label>Sprava<textarea id="smsMessage" rows="3"></textarea></label>
+            </div>
+
+            <div data-mode-field="wifi" class="field-group">
+              <label>Nazov siete<input id="wifiSsid" placeholder="Moja Wi-Fi" /></label>
+              <label>Heslo<input id="wifiPassword" type="password" /></label>
+              <label>Sifrovanie<select id="wifiEncryption"><option value="WPA">WPA/WPA2</option><option value="WEP">WEP</option><option value="nopass">Bez hesla</option></select></label>
+              <label class="check-row"><input id="wifiHidden" type="checkbox" /> Skryta siet</label>
+            </div>
+
+            <div data-mode-field="vcard" class="field-group">
+              <div class="two-col">
+                <label>Meno<input id="vcardFirst" placeholder="Meno" /></label>
+                <label>Priezvisko<input id="vcardLast" placeholder="Priezvisko" /></label>
+              </div>
+              <label>Firma<input id="vcardOrg" placeholder="Firma" /></label>
+              <div class="two-col">
+                <label>Telefon<input id="vcardPhone" type="tel" /></label>
+                <label>Email<input id="vcardEmail" type="email" /></label>
+              </div>
+              <label>Web<input id="vcardUrl" placeholder="https://" /></label>
+            </div>
+
+            <div data-mode-field="event" class="field-group">
+              <label>Nazov<input id="eventTitle" placeholder="Stretnutie" /></label>
+              <div class="two-col">
+                <label>Start<input id="eventStart" type="datetime-local" /></label>
+                <label>Koniec<input id="eventEnd" type="datetime-local" /></label>
+              </div>
+              <label>Miesto<input id="eventLocation" /></label>
+              <label>Popis<textarea id="eventDescription" rows="3"></textarea></label>
+            </div>
+
+            <div data-mode-field="location" class="field-group">
+              <div class="two-col">
+                <label>Latitude<input id="geoLat" type="number" step="0.000001" placeholder="48.1486" /></label>
+                <label>Longitude<input id="geoLng" type="number" step="0.000001" placeholder="17.1077" /></label>
+              </div>
+            </div>
+          </div>
+
+          <details class="advanced">
+            <summary>Raw data</summary>
+            <textarea id="qrText" rows="4" spellcheck="false">https://example.com</textarea>
+          </details>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>Texty</span>
+          </div>
+
+          <div class="two-col">
+            <label>Nadpis<input id="labelTitle" value="QRcodenator" /></label>
+            <label>CTA<input id="labelCta" value="Scan me" /></label>
+          </div>
+          <label>Popis<input id="labelCaption" value="Naskenujte a pokracujte" /></label>
+          <label>Horny text<input id="labelTop" placeholder="Volitelny horny text" /></label>
+          <label>Podpis / URL<input id="labelFooter" placeholder="qrcodenator.app" /></label>
 
           <div class="two-col">
             <label>
-              Nadpis
-              <input id="labelTitle" value="QRcodenator" />
+              Font
+              <select id="fontStyle">
+                <option value="system">Neutral</option>
+                <option value="serif">Elegant</option>
+                <option value="bold">Bold</option>
+                <option value="mono">Mono</option>
+              </select>
             </label>
             <label>
-              Krátky popis
-              <input id="labelCaption" value="Naskenujte a pokračujte" />
+              Velkost textov
+              <select id="textScale">
+                <option value="0.85">Kompaktna</option>
+                <option value="1" selected>Normal</option>
+                <option value="1.18">Vyrazna</option>
+              </select>
             </label>
           </div>
         </section>
 
         <section class="panel">
           <div class="panel-title">
-            <span>Vzhľad</span>
+            <span>Vzhlad</span>
           </div>
 
           <div class="two-col">
             <label>
+              Sablona
+              <select id="templateStyle">
+                <option value="apple">Apple Minimal</option>
+                <option value="event">Event Pass</option>
+                <option value="restaurant">Restaurant Menu</option>
+                <option value="business">Business Card</option>
+                <option value="wifi">Wi-Fi Card</option>
+                <option value="product">Product Tag</option>
+              </select>
+            </label>
+            <label>
               Pattern
               <select id="patternStyle">
-                <option value="square">Klasický</option>
-                <option value="rounded" selected>Zaoblený</option>
+                <option value="square">Klasicky</option>
+                <option value="rounded" selected>Zaobleny</option>
                 <option value="dots">Bodky</option>
                 <option value="diamond">Diamant</option>
                 <option value="weave">Soft grid</option>
               </select>
             </label>
+          </div>
+
+          <div class="two-col">
             <label>
-              Očká
+              Ocka
               <select id="eyeStyle">
-                <option value="classic">Klasické</option>
-                <option value="rounded" selected>Zaoblené</option>
-                <option value="circle">Kruhové</option>
+                <option value="classic">Klasicke</option>
+                <option value="rounded" selected>Zaoblene</option>
+                <option value="circle">Kruhove</option>
+              </select>
+            </label>
+            <label>
+              Rohy karty
+              <select id="cornerStyle">
+                <option value="squircle">Squircle</option>
+                <option value="pill">Pill</option>
+                <option value="sharp">Sharp</option>
+                <option value="cut">Cut corner</option>
               </select>
             </label>
           </div>
 
           <div class="color-grid">
-            <label>
-              Popredie
-              <input id="foregroundColor" type="color" value="#111111" />
-            </label>
-            <label>
-              Pozadie
-              <input id="backgroundColor" type="color" value="#f7f7f5" />
-            </label>
-            <label>
-              Akcent
-              <input id="accentColor" type="color" value="#007aff" />
-            </label>
+            <label>Popredie<input id="foregroundColor" type="color" value="#111111" /></label>
+            <label>Pozadie<input id="backgroundColor" type="color" value="#f7f7f5" /></label>
+            <label>Akcent<input id="accentColor" type="color" value="#007aff" /></label>
           </div>
 
-          <div class="swatches" id="swatches" aria-label="Farebné palety">
+          <div class="two-col">
+            <label>Gradient<select id="gradientStyle"><option value="none">Bez gradientu</option><option value="linear">Linear</option><option value="radial">Radial</option></select></label>
+            <label>Pozadie<select id="backgroundStyle"><option value="solid">Solid</option><option value="soft">Soft wash</option><option value="grid">Jemna mriezka</option><option value="transparent">Transparentne</option></select></label>
+          </div>
+
+          <div class="swatches" id="swatches" aria-label="Farebne palety">
             <button type="button" data-fg="#111111" data-bg="#f7f7f5" data-accent="#007aff" aria-label="Minimal"></button>
             <button type="button" data-fg="#102a43" data-bg="#f5fbff" data-accent="#00a896" aria-label="Fresh"></button>
             <button type="button" data-fg="#1d1d1f" data-bg="#fff8ef" data-accent="#ff7a59" aria-label="Warm"></button>
@@ -102,40 +269,53 @@
         </section>
 
         <section class="panel">
-          <div class="panel-title">
-            <span>Logo</span>
-          </div>
-
-          <label class="file-control">
-            Obrázok v strede
-            <input id="logoInput" type="file" accept="image/*" />
-          </label>
-
-          <label class="range-row">
-            Veľkosť loga
-            <input id="logoSize" type="range" min="0" max="30" value="18" />
-            <output id="logoSizeValue">18%</output>
-          </label>
-
-          <label class="check-row">
-            <input id="logoPlate" type="checkbox" checked />
-            Biela podložka pod logom
-          </label>
-        </section>
-
-        <section class="panel">
-          <div class="panel-title">
-            <span>Export</span>
-          </div>
+          <div class="panel-title"><span>Ram a logo</span></div>
 
           <div class="two-col">
             <label>
-              Veľkosť
+              Oramovanie
+              <select id="frameStyle">
+                <option value="none">Bez ramu</option>
+                <option value="line">Tenká linka</option>
+                <option value="shadow">Soft shadow</option>
+                <option value="glass">Glass</option>
+                <option value="ticket">Ticket</option>
+                <option value="badge">Badge</option>
+              </select>
+            </label>
+            <label>
+              Format
+              <select id="canvasFormat">
+                <option value="square">Stvorec</option>
+                <option value="story">Story</option>
+                <option value="card" selected>Vizitka</option>
+                <option value="a4">A4 nahlad</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="file-control">Obrazok v strede<input id="logoInput" type="file" accept="image/*" /></label>
+          <div class="two-col">
+            <label>Ikona<select id="centerIcon"><option value="none">Bez ikony</option><option value="link">Web</option><option value="wifi">Wi-Fi</option><option value="contact">Kontakt</option><option value="mail">Mail</option><option value="map">Mapa</option><option value="pay">Platba</option><option value="instagram">Instagram</option></select></label>
+            <label>Posun loga<input id="logoOffset" type="range" min="-12" max="12" value="0" /></label>
+          </div>
+
+          <label class="range-row">Velkost loga<input id="logoSize" type="range" min="0" max="30" value="18" /><output id="logoSizeValue">18%</output></label>
+          <label class="check-row"><input id="logoPlate" type="checkbox" checked /> Biela podlozka pod logom</label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><span>Export a kontrola</span></div>
+
+          <div class="two-col">
+            <label>
+              Velkost
               <select id="exportSize">
                 <option value="720">720 px</option>
                 <option value="960" selected>960 px</option>
                 <option value="1280">1280 px</option>
                 <option value="1600">1600 px</option>
+                <option value="2400">2400 px</option>
               </select>
             </label>
             <label>
@@ -148,11 +328,31 @@
             </label>
           </div>
 
-          <label class="range-row">
-            Okraj
-            <input id="quietZone" type="range" min="2" max="8" value="4" />
-            <output id="quietZoneValue">4</output>
-          </label>
+          <label class="range-row">Okraj<input id="quietZone" type="range" min="2" max="8" value="4" /><output id="quietZoneValue">4</output></label>
+          <label class="range-row">Simulacia tlace<input id="printBlur" type="range" min="0" max="6" value="0" /><output id="printBlurValue">0</output></label>
+          <div class="notice" id="readabilityNotes">Kontrast a logo su v norme.</div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><span>Projekty</span></div>
+
+          <label>Nazov projektu<input id="projectName" value="Moj QR projekt" /></label>
+          <div class="button-grid">
+            <button id="saveLocal" type="button">Ulozit lokalne</button>
+            <button id="saveCloud" type="button">Ulozit cloud</button>
+            <button id="loadCloud" type="button">Nacitat cloud</button>
+            <button id="saveBrand" type="button">Brand kit</button>
+          </div>
+          <div class="lists">
+            <div>
+              <h2>Historia</h2>
+              <div id="historyList" class="item-list"></div>
+            </div>
+            <div>
+              <h2>Projekty</h2>
+              <div id="projectList" class="item-list"></div>
+            </div>
+          </div>
         </section>
       </aside>
     </main>
