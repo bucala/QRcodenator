@@ -824,7 +824,7 @@ function getEffectiveRenderSettings(options, qr = null) {
 
   return {
     quietZone: Math.max(options.quietZone, 6),
-    pattern: ["dots", "diamond", "weave"].includes(options.pattern) ? "square" : options.pattern,
+    pattern: "square",
     eyeStyle: version >= 7 ? "classic" : options.eyeStyle,
     logoSize: Math.min(options.logoSize, maxLogoSize),
     logoOffset: Math.max(-maxLogoOffset, Math.min(maxLogoOffset, options.logoOffset)),
@@ -1053,12 +1053,12 @@ function drawQrToCanvas(canvas, qr, options) {
   const ctx = canvas.getContext("2d");
   const metrics = getCanvasMetrics(options);
   const effective = getEffectiveRenderSettings(options, qr);
-  const qrPixels = metrics.qr;
   canvas.width = metrics.width;
   canvas.height = metrics.height;
+  canvas.classList.toggle("pixel-preview", options.scanSafe);
 
   const colors = {
-    foreground: options.scanSafe ? options.foreground : makeForegroundStyle(ctx, options, 0, 0, qrPixels),
+    foreground: options.scanSafe ? options.foreground : makeForegroundStyle(ctx, options, 0, 0, metrics.qr),
     background: options.background,
     accent: options.scanSafe && qr.version >= 7 ? options.foreground : options.accent,
   };
@@ -1066,7 +1066,8 @@ function drawQrToCanvas(canvas, qr, options) {
   fillBackground(ctx, canvas.width, canvas.height, options);
 
   const totalModules = qr.size + effective.quietZone * 2;
-  const cell = qrPixels / totalModules;
+  const cell = Math.max(1, Math.floor(metrics.qr / totalModules));
+  const qrPixels = cell * totalModules;
   const qrX = Math.round((canvas.width - qrPixels) / 2);
   const topTextSpace = options.topLabel || options.cta ? canvas.height * 0.12 : canvas.height * 0.08;
   const qrY = Math.round(Math.min(canvas.height - qrPixels - canvas.height * 0.22, topTextSpace));

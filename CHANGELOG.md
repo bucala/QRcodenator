@@ -4,6 +4,16 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-12 - Pixel-Aligned Screen Scanning
+
+Commit: current QR scan fix
+
+### Changed
+
+- Scan-safe rendering now forces full square QR modules instead of allowing rounded modules.
+- Canvas QR rendering now aligns every QR module to whole pixels to avoid grey antialias seams.
+- The live scan-safe preview now uses crisp pixel scaling so mobile cameras can read it from a monitor more reliably.
+
 ## 2026-06-12 - Documentation System
 
 Commit: current documentation update
