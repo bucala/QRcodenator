@@ -769,6 +769,12 @@ function getReadability(options, qr = null) {
   if (options.scanSafe && options.logoSize > 14) {
     notes.push("Scan-safe render zmensi logo na bezpecnu velkost.");
   }
+  if (options.scanSafe && qr && qr.version >= 7 && options.logoSize > 0) {
+    notes.push("Pri velkom QR scan-safe vypne logo, aby bol kod citatelny.");
+  }
+  if (options.scanSafe && qr && qr.version >= 7 && options.eyeStyle !== "classic") {
+    notes.push("Pri velkom QR scan-safe pouzije klasicke rohy.");
+  }
   if (!options.scanSafe && (Math.abs(options.logoOffsetX) > 8 || Math.abs(options.logoOffset) > 8)) {
     score -= 18;
     notes.push("Velky posun loga moze zhorsit citatelnost.");
@@ -812,13 +818,14 @@ function getEffectiveRenderSettings(options, qr = null) {
   }
 
   const version = qr ? qr.version : 1;
-  const maxLogoSize = version >= 7 ? 8 : version >= 5 ? 10 : 12;
+  const maxLogoSize = version >= 7 ? 0 : version >= 5 ? 8 : 12;
   const maxLogoOffset = version >= 7 ? 3 : 5;
   const maxClearance = version >= 7 ? 1.08 : 1.12;
 
   return {
     quietZone: Math.max(options.quietZone, 6),
     pattern: ["dots", "diamond", "weave"].includes(options.pattern) ? "square" : options.pattern,
+    eyeStyle: version >= 7 ? "classic" : options.eyeStyle,
     logoSize: Math.min(options.logoSize, maxLogoSize),
     logoOffset: Math.max(-maxLogoOffset, Math.min(maxLogoOffset, options.logoOffset)),
     logoOffsetX: Math.max(-maxLogoOffset, Math.min(maxLogoOffset, options.logoOffsetX)),
@@ -860,7 +867,7 @@ function getOptions() {
     exportSize: Number(dom.exportSize.value),
     quietZone: Number(dom.quietZone.value),
     scanSafe: dom.scanSafe.checked,
-    ecl: dom.scanSafe.checked ? "H" : dom.errorCorrection.value,
+    ecl: dom.scanSafe.checked ? "Q" : dom.errorCorrection.value,
     printBlur: Number(dom.printBlur.value),
   };
 }
@@ -1053,7 +1060,7 @@ function drawQrToCanvas(canvas, qr, options) {
   const colors = {
     foreground: options.scanSafe ? options.foreground : makeForegroundStyle(ctx, options, 0, 0, qrPixels),
     background: options.background,
-    accent: options.accent,
+    accent: options.scanSafe && qr.version >= 7 ? options.foreground : options.accent,
   };
 
   fillBackground(ctx, canvas.width, canvas.height, options);
@@ -1090,9 +1097,9 @@ function drawQrToCanvas(canvas, qr, options) {
     }
   }
 
-  drawEye(ctx, qrX + offset, qrY + offset, cell, options.eyeStyle, colors);
-  drawEye(ctx, qrX + offset + (qr.size - 7) * cell, qrY + offset, cell, options.eyeStyle, colors);
-  drawEye(ctx, qrX + offset, qrY + offset + (qr.size - 7) * cell, cell, options.eyeStyle, colors);
+  drawEye(ctx, qrX + offset, qrY + offset, cell, effective.eyeStyle, colors);
+  drawEye(ctx, qrX + offset + (qr.size - 7) * cell, qrY + offset, cell, effective.eyeStyle, colors);
+  drawEye(ctx, qrX + offset, qrY + offset + (qr.size - 7) * cell, cell, effective.eyeStyle, colors);
   ctx.filter = "none";
 
   if (hasLogoContent) {
@@ -1200,9 +1207,10 @@ function generateSvg(qr, options) {
   }
 
   const eye = (x, y) => {
-    parts.push(`<rect x="${x}" y="${y}" width="${cell * 7}" height="${cell * 7}" rx="${options.eyeStyle === "rounded" ? cell * 1.35 : 0}" fill="${options.foreground}"/>`);
-    parts.push(`<rect x="${x + cell}" y="${y + cell}" width="${cell * 5}" height="${cell * 5}" rx="${options.eyeStyle === "rounded" ? cell * 0.9 : 0}" fill="${options.background}"/>`);
-    parts.push(`<rect x="${x + cell * 2}" y="${y + cell * 2}" width="${cell * 3}" height="${cell * 3}" rx="${options.eyeStyle === "rounded" ? cell * 0.62 : 0}" fill="${options.accent}"/>`);
+    const eyeAccent = options.scanSafe && qr.version >= 7 ? options.foreground : options.accent;
+    parts.push(`<rect x="${x}" y="${y}" width="${cell * 7}" height="${cell * 7}" rx="${effective.eyeStyle === "rounded" ? cell * 1.35 : 0}" fill="${options.foreground}"/>`);
+    parts.push(`<rect x="${x + cell}" y="${y + cell}" width="${cell * 5}" height="${cell * 5}" rx="${effective.eyeStyle === "rounded" ? cell * 0.9 : 0}" fill="${options.background}"/>`);
+    parts.push(`<rect x="${x + cell * 2}" y="${y + cell * 2}" width="${cell * 3}" height="${cell * 3}" rx="${effective.eyeStyle === "rounded" ? cell * 0.62 : 0}" fill="${eyeAccent}"/>`);
   };
   eye(safeOffset, safeOffset);
   eye(safeOffset + (qr.size - 7) * cell, safeOffset);

@@ -64,6 +64,8 @@ Commit: current Firebase and QR fix
 - Firebase Auth and Firestore now initialize from the built-in packaged config.
 - Scan-safe rendering now uses stricter limits for QR version 7 and higher.
 - Dense QR codes now get a larger quiet zone and much smaller centered logo in scan-safe mode.
+- Large scan-safe QR codes now disable logos and decorative finder eyes for maximum scanner compatibility.
+- Scan-safe mode now uses error correction `Q` instead of `H` to reduce module density while keeping strong correction.
 - README now explains that Firebase web config is a public identifier and security is handled by Auth, Firestore rules, and vault encryption.
 
 ### Fixed
