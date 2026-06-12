@@ -30,6 +30,23 @@ Commit: current UI update
 - Reworked Account Vault button layout so config save, sign-in, registration, and sign-out actions are easier to scan.
 - Standardized success and error status styling across local, export, account, and cloud actions.
 
+## 2026-06-12 - Scan-Safe QR Rendering
+
+Commit: current QR reliability update
+
+### Added
+
+- Added a `Scan-safe render pre mobilne skenery` option in export/readability controls.
+- Added automatic scan-safe render limits for quiet zone, logo size, logo offset, logo clearance, and decorative patterns.
+
+### Changed
+
+- Scan-safe rendering now forces high error correction.
+- Scan-safe rendering uses solid QR foreground instead of decorative gradients.
+- Scan-safe rendering converts risky decorative module patterns to full square modules for better camera recognition.
+- SVG export now mirrors the scan-safe module rendering behavior.
+- Readability scoring now warns about risky logo settings more clearly.
+
 ## 2026-06-12 - Logo Clearance And Text Positioning Controls
 
 Commit: `d67d492` - `Improve logo clearance and text positioning controls`

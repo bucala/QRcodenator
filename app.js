@@ -75,6 +75,7 @@ const dom = {
   quietZoneValue: document.querySelector("#quietZoneValue"),
   printBlur: document.querySelector("#printBlur"),
   printBlurValue: document.querySelector("#printBlurValue"),
+  scanSafe: document.querySelector("#scanSafe"),
   downloadPng: document.querySelector("#downloadPng"),
   downloadJpg: document.querySelector("#downloadJpg"),
   downloadSvg: document.querySelector("#downloadSvg"),
@@ -755,29 +756,69 @@ function contrastRatio(a, b) {
 function getReadability(options) {
   const notes = [];
   let score = 100;
+  const effective = getEffectiveRenderSettings(options);
   const contrast = contrastRatio(options.foreground, options.background);
   if (contrast < 4.5) {
     score -= 35;
     notes.push("Nizky kontrast farieb.");
   }
-  if (options.logoSize > 22) {
+  if (effective.logoSize > 22) {
     score -= 20;
     notes.push("Logo je velke, skuste max 22%.");
   }
-  if (options.quietZone < 4) {
+  if (options.scanSafe && options.logoSize > 14) {
+    notes.push("Scan-safe render zmensi logo v exporte na bezpecnu velkost.");
+  }
+  if (!options.scanSafe && (Math.abs(options.logoOffsetX) > 8 || Math.abs(options.logoOffset) > 8)) {
+    score -= 18;
+    notes.push("Velky posun loga moze zhorsit citatelnost.");
+  } else if (options.scanSafe && (Math.abs(options.logoOffsetX) > 6 || Math.abs(options.logoOffset) > 6)) {
+    notes.push("Scan-safe render obmedzi posun loga do bezpecnej zony.");
+  }
+  if (!options.scanSafe && options.logoClearance > 1.28) {
+    score -= 14;
+    notes.push("Cista zona okolo loga je prilis velka.");
+  } else if (options.scanSafe && options.logoClearance > effective.logoClearance) {
+    notes.push("Scan-safe render zmensi cistu zonu okolo loga.");
+  }
+  if (effective.quietZone < 4) {
     score -= 15;
     notes.push("Okraj je mensi ako odporucana hodnota 4.");
   }
-  if (options.gradient !== "none") {
+  if (!options.scanSafe && options.gradient !== "none") {
     score -= 6;
     notes.push("Gradient moze znizit citatelnost pri tlaci.");
+  } else if (options.scanSafe && options.gradient !== "none") {
+    notes.push("Scan-safe render pouzije solidnu farbu QR modulov.");
   }
-  if (options.pattern === "diamond" || options.pattern === "dots") {
+  if (!options.scanSafe && (options.pattern === "diamond" || options.pattern === "dots")) {
     score -= 5;
     notes.push("Dekorativny pattern otestujte skenerom.");
   }
   score = Math.max(0, Math.round(score));
   return { score, notes: notes.length ? notes : ["Kontrast a logo su v norme."] };
+}
+
+function getEffectiveRenderSettings(options) {
+  if (!options.scanSafe) {
+    return {
+      quietZone: options.quietZone,
+      pattern: options.pattern,
+      logoSize: options.logoSize,
+      logoOffset: options.logoOffset,
+      logoOffsetX: options.logoOffsetX,
+      logoClearance: options.logoClearance,
+    };
+  }
+
+  return {
+    quietZone: Math.max(options.quietZone, 5),
+    pattern: ["dots", "diamond", "weave"].includes(options.pattern) ? "square" : options.pattern,
+    logoSize: Math.min(options.logoSize, 14),
+    logoOffset: Math.max(-6, Math.min(6, options.logoOffset)),
+    logoOffsetX: Math.max(-6, Math.min(6, options.logoOffsetX)),
+    logoClearance: Math.min(Math.max(options.logoClearance, 1.08), 1.16),
+  };
 }
 
 function getOptions() {
@@ -813,7 +854,8 @@ function getOptions() {
     logoPlate: dom.logoPlate.checked,
     exportSize: Number(dom.exportSize.value),
     quietZone: Number(dom.quietZone.value),
-    ecl: dom.errorCorrection.value,
+    scanSafe: dom.scanSafe.checked,
+    ecl: dom.scanSafe.checked ? "H" : dom.errorCorrection.value,
     printBlur: Number(dom.printBlur.value),
   };
 }
@@ -998,30 +1040,31 @@ function isInLogoClearArea(x, y, cell, logoArea) {
 function drawQrToCanvas(canvas, qr, options) {
   const ctx = canvas.getContext("2d");
   const metrics = getCanvasMetrics(options);
+  const effective = getEffectiveRenderSettings(options);
   const qrPixels = metrics.qr;
   canvas.width = metrics.width;
   canvas.height = metrics.height;
 
   const colors = {
-    foreground: makeForegroundStyle(ctx, options, 0, 0, qrPixels),
+    foreground: options.scanSafe ? options.foreground : makeForegroundStyle(ctx, options, 0, 0, qrPixels),
     background: options.background,
     accent: options.accent,
   };
 
   fillBackground(ctx, canvas.width, canvas.height, options);
 
-  const totalModules = qr.size + options.quietZone * 2;
+  const totalModules = qr.size + effective.quietZone * 2;
   const cell = qrPixels / totalModules;
   const qrX = Math.round((canvas.width - qrPixels) / 2);
   const topTextSpace = options.topLabel || options.cta ? canvas.height * 0.12 : canvas.height * 0.08;
   const qrY = Math.round(Math.min(canvas.height - qrPixels - canvas.height * 0.22, topTextSpace));
-  const offset = options.quietZone * cell;
+  const offset = effective.quietZone * cell;
   const modules = qr.modules;
-  const hasLogoContent = (state.logoImage || options.centerIcon !== "none") && options.logoSize > 0;
-  const logoBox = qrPixels * (options.logoSize / 100);
-  const logoCenterX = qrX + qrPixels / 2 + qrPixels * (options.logoOffsetX / 100);
-  const logoCenterY = qrY + qrPixels / 2 + qrPixels * (options.logoOffset / 100);
-  const logoClearSize = Math.max(logoBox * options.logoClearance, logoBox + cell * 2);
+  const hasLogoContent = (state.logoImage || options.centerIcon !== "none") && effective.logoSize > 0;
+  const logoBox = qrPixels * (effective.logoSize / 100);
+  const logoCenterX = qrX + qrPixels / 2 + qrPixels * (effective.logoOffsetX / 100);
+  const logoCenterY = qrY + qrPixels / 2 + qrPixels * (effective.logoOffset / 100);
+  const logoClearSize = Math.max(logoBox * effective.logoClearance, logoBox + cell * 2);
   const logoArea = hasLogoContent ? {
     x: logoCenterX - logoClearSize / 2,
     y: logoCenterY - logoClearSize / 2,
@@ -1038,7 +1081,7 @@ function drawQrToCanvas(canvas, qr, options) {
       const px = qrX + offset + x * cell;
       const py = qrY + offset + y * cell;
       if (isInLogoClearArea(px, py, cell, logoArea)) continue;
-      drawModule(ctx, px, py, cell, options.pattern, colors.foreground, modules, x, y);
+      drawModule(ctx, px, py, cell, effective.pattern, colors.foreground, modules, x, y);
     }
   }
 
@@ -1110,7 +1153,8 @@ function drawQrToCanvas(canvas, qr, options) {
 }
 
 function generateSvg(qr, options) {
-  const totalModules = qr.size + options.quietZone * 2;
+  const effective = getEffectiveRenderSettings(options);
+  const totalModules = qr.size + effective.quietZone * 2;
   const cell = options.exportSize / totalModules;
   const labelHeight = Math.round(options.exportSize * (0.18 + Math.max(0, options.textOffsetY) / 100) + 150 * options.textScale);
   const height = options.exportSize + labelHeight;
@@ -1119,12 +1163,13 @@ function generateSvg(qr, options) {
     `<rect width="100%" height="100%" fill="${options.background}"/>`,
   ];
   const offset = options.quietZone * cell;
-  const r = options.pattern === "rounded" || options.pattern === "weave" ? cell * 0.2 : 0;
-  const svgLogoBox = options.exportSize * (options.logoSize / 100);
-  const svgLogoCenterX = options.exportSize / 2 + options.exportSize * (options.logoOffsetX / 100);
-  const svgLogoCenterY = options.exportSize / 2 + options.exportSize * (options.logoOffset / 100);
-  const svgLogoClearSize = Math.max(svgLogoBox * options.logoClearance, svgLogoBox + cell * 2);
-  const svgLogoArea = (state.logoDataUrl || options.centerIcon !== "none") && options.logoSize > 0 ? {
+  const safeOffset = effective.quietZone * cell;
+  const r = effective.pattern === "rounded" || effective.pattern === "weave" ? cell * 0.2 : 0;
+  const svgLogoBox = options.exportSize * (effective.logoSize / 100);
+  const svgLogoCenterX = options.exportSize / 2 + options.exportSize * (effective.logoOffsetX / 100);
+  const svgLogoCenterY = options.exportSize / 2 + options.exportSize * (effective.logoOffset / 100);
+  const svgLogoClearSize = Math.max(svgLogoBox * effective.logoClearance, svgLogoBox + cell * 2);
+  const svgLogoArea = (state.logoDataUrl || options.centerIcon !== "none") && effective.logoSize > 0 ? {
     x: svgLogoCenterX - svgLogoClearSize / 2,
     y: svgLogoCenterY - svgLogoClearSize / 2,
     width: svgLogoClearSize,
@@ -1134,13 +1179,15 @@ function generateSvg(qr, options) {
   for (let y = 0; y < qr.size; y += 1) {
     for (let x = 0; x < qr.size; x += 1) {
       if (!qr.modules[y][x] || isInFinder(x, y, qr.size)) continue;
-      const px = offset + x * cell;
-      const py = offset + y * cell;
+      const px = safeOffset + x * cell;
+      const py = safeOffset + y * cell;
       if (isInLogoClearArea(px, py, cell, svgLogoArea)) continue;
-      if (options.pattern === "dots") {
+      if (effective.pattern === "dots") {
         parts.push(`<circle cx="${px + cell / 2}" cy="${py + cell / 2}" r="${cell * 0.38}" fill="${options.foreground}"/>`);
-      } else if (options.pattern === "diamond") {
+      } else if (effective.pattern === "diamond") {
         parts.push(`<rect x="${px + cell * 0.18}" y="${py + cell * 0.18}" width="${cell * 0.64}" height="${cell * 0.64}" rx="${cell * 0.08}" fill="${options.foreground}" transform="rotate(45 ${px + cell / 2} ${py + cell / 2})"/>`);
+      } else if (effective.pattern === "square") {
+        parts.push(`<rect x="${px}" y="${py}" width="${cell}" height="${cell}" fill="${options.foreground}"/>`);
       } else {
         parts.push(`<rect x="${px + cell * 0.08}" y="${py + cell * 0.08}" width="${cell * 0.84}" height="${cell * 0.84}" rx="${r}" fill="${options.foreground}"/>`);
       }
@@ -1152,11 +1199,11 @@ function generateSvg(qr, options) {
     parts.push(`<rect x="${x + cell}" y="${y + cell}" width="${cell * 5}" height="${cell * 5}" rx="${options.eyeStyle === "rounded" ? cell * 0.9 : 0}" fill="${options.background}"/>`);
     parts.push(`<rect x="${x + cell * 2}" y="${y + cell * 2}" width="${cell * 3}" height="${cell * 3}" rx="${options.eyeStyle === "rounded" ? cell * 0.62 : 0}" fill="${options.accent}"/>`);
   };
-  eye(offset, offset);
-  eye(offset + (qr.size - 7) * cell, offset);
-  eye(offset, offset + (qr.size - 7) * cell);
+  eye(safeOffset, safeOffset);
+  eye(safeOffset + (qr.size - 7) * cell, safeOffset);
+  eye(safeOffset, safeOffset + (qr.size - 7) * cell);
 
-  if (state.logoDataUrl && options.logoSize > 0) {
+  if (state.logoDataUrl && effective.logoSize > 0) {
     const logoBox = svgLogoBox;
     const x = svgLogoCenterX - logoBox / 2;
     const y = svgLogoCenterY - logoBox / 2;
