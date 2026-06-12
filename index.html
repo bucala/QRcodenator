@@ -191,12 +191,12 @@
             </label>
             <label>
               Velkost textov
-              <select id="textScale">
-                <option value="0.85">Kompaktna</option>
-                <option value="1" selected>Normal</option>
-                <option value="1.18">Vyrazna</option>
-              </select>
+              <input id="textScale" type="range" min="70" max="135" value="100" />
             </label>
+          </div>
+          <div class="two-col">
+            <label>Posun textu X<input id="textOffsetX" type="range" min="-20" max="20" value="0" /></label>
+            <label>Posun textu Y<input id="textOffsetY" type="range" min="-20" max="24" value="10" /></label>
           </div>
         </section>
 
@@ -253,6 +253,7 @@
             <label>Popredie<input id="foregroundColor" type="color" value="#111111" /></label>
             <label>Pozadie<input id="backgroundColor" type="color" value="#f7f7f5" /></label>
             <label>Akcent<input id="accentColor" type="color" value="#007aff" /></label>
+            <label>Ram<input id="frameColor" type="color" value="#d8d8d8" /></label>
           </div>
 
           <div class="two-col">
@@ -297,7 +298,11 @@
           <label class="file-control">Obrazok v strede<input id="logoInput" type="file" accept="image/*" /></label>
           <div class="two-col">
             <label>Ikona<select id="centerIcon"><option value="none">Bez ikony</option><option value="link">Web</option><option value="wifi">Wi-Fi</option><option value="contact">Kontakt</option><option value="mail">Mail</option><option value="map">Mapa</option><option value="pay">Platba</option><option value="instagram">Instagram</option></select></label>
-            <label>Posun loga<input id="logoOffset" type="range" min="-12" max="12" value="0" /></label>
+            <label>Logo X<input id="logoOffsetX" type="range" min="-18" max="18" value="0" /></label>
+          </div>
+          <div class="two-col">
+            <label>Logo Y<input id="logoOffset" type="range" min="-18" max="18" value="0" /></label>
+            <label>Cista zona<input id="logoClearance" type="range" min="105" max="165" value="130" /></label>
           </div>
 
           <label class="range-row">Velkost loga<input id="logoSize" type="range" min="0" max="30" value="18" /><output id="logoSizeValue">18%</output></label>

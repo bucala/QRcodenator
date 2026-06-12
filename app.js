@@ -46,6 +46,8 @@ const dom = {
   labelFooter: document.querySelector("#labelFooter"),
   fontStyle: document.querySelector("#fontStyle"),
   textScale: document.querySelector("#textScale"),
+  textOffsetX: document.querySelector("#textOffsetX"),
+  textOffsetY: document.querySelector("#textOffsetY"),
   template: document.querySelector("#templateStyle"),
   pattern: document.querySelector("#patternStyle"),
   eyeStyle: document.querySelector("#eyeStyle"),
@@ -53,6 +55,7 @@ const dom = {
   foreground: document.querySelector("#foregroundColor"),
   background: document.querySelector("#backgroundColor"),
   accent: document.querySelector("#accentColor"),
+  frameColor: document.querySelector("#frameColor"),
   gradientStyle: document.querySelector("#gradientStyle"),
   backgroundStyle: document.querySelector("#backgroundStyle"),
   frameStyle: document.querySelector("#frameStyle"),
@@ -62,6 +65,8 @@ const dom = {
   logoSize: document.querySelector("#logoSize"),
   logoSizeValue: document.querySelector("#logoSizeValue"),
   logoOffset: document.querySelector("#logoOffset"),
+  logoOffsetX: document.querySelector("#logoOffsetX"),
+  logoClearance: document.querySelector("#logoClearance"),
   logoPlate: document.querySelector("#logoPlate"),
   exportSize: document.querySelector("#exportSize"),
   errorCorrection: document.querySelector("#errorCorrection"),
@@ -139,12 +144,12 @@ const FIREBASE_IMPORTS = {
   firestore: `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`,
 };
 const TEMPLATE_PRESETS = {
-  apple: { fg: "#111111", bg: "#f7f7f5", accent: "#007aff", pattern: "rounded", frame: "none", format: "card" },
-  event: { fg: "#14213d", bg: "#f6f8ff", accent: "#ef476f", pattern: "dots", frame: "ticket", format: "story" },
-  restaurant: { fg: "#1f2933", bg: "#fff8ef", accent: "#d97706", pattern: "weave", frame: "line", format: "card" },
-  business: { fg: "#101828", bg: "#f8fafc", accent: "#475467", pattern: "rounded", frame: "shadow", format: "card" },
-  wifi: { fg: "#073b4c", bg: "#f0fffb", accent: "#06d6a0", pattern: "rounded", frame: "badge", format: "square" },
-  product: { fg: "#221c35", bg: "#fbf8ff", accent: "#7c3aed", pattern: "diamond", frame: "glass", format: "square" },
+  apple: { fg: "#111111", bg: "#f7f7f5", accent: "#007aff", frameColor: "#d8d8d8", pattern: "rounded", frame: "none", format: "card" },
+  event: { fg: "#14213d", bg: "#f6f8ff", accent: "#ef476f", frameColor: "#ef476f", pattern: "dots", frame: "ticket", format: "story" },
+  restaurant: { fg: "#1f2933", bg: "#fff8ef", accent: "#d97706", frameColor: "#e8c99a", pattern: "weave", frame: "line", format: "card" },
+  business: { fg: "#101828", bg: "#f8fafc", accent: "#475467", frameColor: "#c9ced6", pattern: "rounded", frame: "shadow", format: "card" },
+  wifi: { fg: "#073b4c", bg: "#f0fffb", accent: "#06d6a0", frameColor: "#06d6a0", pattern: "rounded", frame: "badge", format: "square" },
+  product: { fg: "#221c35", bg: "#fbf8ff", accent: "#7c3aed", frameColor: "#cabdff", pattern: "diamond", frame: "glass", format: "square" },
 };
 
 const GF = (() => {
@@ -784,7 +789,9 @@ function getOptions() {
     topLabel: dom.labelTop.value.trim(),
     footer: dom.labelFooter.value.trim(),
     fontStyle: dom.fontStyle.value,
-    textScale: Number(dom.textScale.value),
+    textScale: Number(dom.textScale.value) > 5 ? Number(dom.textScale.value) / 100 : Number(dom.textScale.value),
+    textOffsetX: Number(dom.textOffsetX.value),
+    textOffsetY: Number(dom.textOffsetY.value),
     template: dom.template.value,
     pattern: dom.pattern.value,
     eyeStyle: dom.eyeStyle.value,
@@ -792,6 +799,7 @@ function getOptions() {
     foreground: dom.foreground.value,
     background: dom.background.value,
     accent: dom.accent.value,
+    frameColor: dom.frameColor.value,
     gradient: dom.gradientStyle.value,
     backgroundStyle: dom.backgroundStyle.value,
     frameStyle: dom.frameStyle.value,
@@ -799,6 +807,8 @@ function getOptions() {
     centerIcon: dom.centerIcon.value,
     logoSize: Number(dom.logoSize.value),
     logoOffset: Number(dom.logoOffset.value),
+    logoOffsetX: Number(dom.logoOffsetX.value),
+    logoClearance: Number(dom.logoClearance.value) / 100,
     logoPlate: dom.logoPlate.checked,
     exportSize: Number(dom.exportSize.value),
     quietZone: Number(dom.quietZone.value),
@@ -889,7 +899,7 @@ function drawFrame(ctx, x, y, size, options) {
     ctx.fill();
   }
   if (options.frameStyle === "line" || options.frameStyle === "glass" || options.frameStyle === "ticket" || options.frameStyle === "badge") {
-    ctx.strokeStyle = options.frameStyle === "badge" ? options.accent : "rgba(29,29,31,0.14)";
+    ctx.strokeStyle = options.frameStyle === "badge" ? options.accent : options.frameColor;
     ctx.lineWidth = Math.max(3, size * 0.01);
     roundRect(ctx, x - size * 0.04, y - size * 0.04, size * 1.08, size * 1.08, radius);
     ctx.stroke();
@@ -972,6 +982,18 @@ function drawCenterIcon(ctx, icon, cx, cy, size, color) {
   ctx.restore();
 }
 
+function isInLogoClearArea(x, y, cell, logoArea) {
+  if (!logoArea) return false;
+  const moduleCenterX = x + cell / 2;
+  const moduleCenterY = y + cell / 2;
+  return (
+    moduleCenterX >= logoArea.x &&
+    moduleCenterX <= logoArea.x + logoArea.width &&
+    moduleCenterY >= logoArea.y &&
+    moduleCenterY <= logoArea.y + logoArea.height
+  );
+}
+
 function drawQrToCanvas(canvas, qr, options) {
   const ctx = canvas.getContext("2d");
   const metrics = getCanvasMetrics(options);
@@ -994,6 +1016,17 @@ function drawQrToCanvas(canvas, qr, options) {
   const qrY = Math.round(Math.min(canvas.height - qrPixels - canvas.height * 0.22, topTextSpace));
   const offset = options.quietZone * cell;
   const modules = qr.modules;
+  const hasLogoContent = (state.logoImage || options.centerIcon !== "none") && options.logoSize > 0;
+  const logoBox = qrPixels * (options.logoSize / 100);
+  const logoCenterX = qrX + qrPixels / 2 + qrPixels * (options.logoOffsetX / 100);
+  const logoCenterY = qrY + qrPixels / 2 + qrPixels * (options.logoOffset / 100);
+  const logoClearSize = Math.max(logoBox * options.logoClearance, logoBox + cell * 2);
+  const logoArea = hasLogoContent ? {
+    x: logoCenterX - logoClearSize / 2,
+    y: logoCenterY - logoClearSize / 2,
+    width: logoClearSize,
+    height: logoClearSize,
+  } : null;
 
   drawFrame(ctx, qrX, qrY, qrPixels, options);
 
@@ -1003,6 +1036,7 @@ function drawQrToCanvas(canvas, qr, options) {
       if (!modules[y][x] || isInFinder(x, y, qr.size)) continue;
       const px = qrX + offset + x * cell;
       const py = qrY + offset + y * cell;
+      if (isInLogoClearArea(px, py, cell, logoArea)) continue;
       drawModule(ctx, px, py, cell, options.pattern, colors.foreground, modules, x, y);
     }
   }
@@ -1012,11 +1046,10 @@ function drawQrToCanvas(canvas, qr, options) {
   drawEye(ctx, qrX + offset, qrY + offset + (qr.size - 7) * cell, cell, options.eyeStyle, colors);
   ctx.filter = "none";
 
-  if ((state.logoImage || options.centerIcon !== "none") && options.logoSize > 0) {
-    const logoBox = qrPixels * (options.logoSize / 100);
-    const centerX = qrX + qrPixels / 2;
-    const centerY = qrY + qrPixels / 2 + qrPixels * (options.logoOffset / 100);
-    const plate = logoBox * 1.22;
+  if (hasLogoContent) {
+    const centerX = logoCenterX;
+    const centerY = logoCenterY;
+    const plate = logoClearSize;
 
     if (options.logoPlate) {
       ctx.fillStyle = "rgba(255,255,255,0.96)";
@@ -1040,43 +1073,45 @@ function drawQrToCanvas(canvas, qr, options) {
 
   const fontFamily = getFontFamily(options.fontStyle);
   const scale = options.textScale;
+  const textX = canvas.width / 2 + qrPixels * (options.textOffsetX / 100);
+  const textStartY = qrY + qrPixels + qrPixels * (0.1 + options.textOffsetY / 100);
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
   if (options.topLabel) {
     ctx.fillStyle = options.accent;
     ctx.font = `700 ${Math.round(qrPixels * 0.028 * scale)}px ${fontFamily}`;
-    ctx.fillText(options.topLabel, canvas.width / 2, Math.max(36, qrY * 0.55));
+    ctx.fillText(options.topLabel, textX, Math.max(36, qrY * 0.55));
   }
   if (options.cta) {
     ctx.fillStyle = options.foreground;
     ctx.font = `800 ${Math.round(qrPixels * 0.05 * scale)}px ${fontFamily}`;
-    ctx.fillText(options.cta, canvas.width / 2, qrY + qrPixels + qrPixels * 0.075);
+    ctx.fillText(options.cta, textX, textStartY);
   }
-  let textY = qrY + qrPixels + qrPixels * (options.cta ? 0.15 : 0.09);
+  let textY = textStartY + (options.cta ? qrPixels * 0.07 * scale : 0);
   if (options.title) {
     ctx.fillStyle = options.foreground;
     const weight = options.fontStyle === "bold" ? 850 : 700;
     ctx.font = `${weight} ${Math.round(qrPixels * 0.04 * scale)}px ${fontFamily}`;
-    ctx.fillText(options.title, canvas.width / 2, textY);
+    ctx.fillText(options.title, textX, textY);
     textY += qrPixels * 0.065 * scale;
   }
   if (options.caption) {
     ctx.fillStyle = "rgba(29,29,31,0.62)";
     ctx.font = `500 ${Math.round(qrPixels * 0.024 * scale)}px ${fontFamily}`;
-    ctx.fillText(options.caption, canvas.width / 2, textY);
+    ctx.fillText(options.caption, textX, textY);
     textY += qrPixels * 0.048 * scale;
   }
   if (options.footer) {
     ctx.fillStyle = "rgba(29,29,31,0.46)";
     ctx.font = `600 ${Math.round(qrPixels * 0.02 * scale)}px ${fontFamily}`;
-    ctx.fillText(options.footer, canvas.width / 2, Math.min(canvas.height - 28, textY));
+    ctx.fillText(options.footer, textX, Math.min(canvas.height - 28, textY));
   }
 }
 
 function generateSvg(qr, options) {
   const totalModules = qr.size + options.quietZone * 2;
   const cell = options.exportSize / totalModules;
-  const labelHeight = (options.title ? 82 : 0) + (options.caption ? 46 : 0) + 42;
+  const labelHeight = Math.round(options.exportSize * (0.18 + Math.max(0, options.textOffsetY) / 100) + 150 * options.textScale);
   const height = options.exportSize + labelHeight;
   const parts = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${options.exportSize}" height="${height}" viewBox="0 0 ${options.exportSize} ${height}">`,
@@ -1084,12 +1119,23 @@ function generateSvg(qr, options) {
   ];
   const offset = options.quietZone * cell;
   const r = options.pattern === "rounded" || options.pattern === "weave" ? cell * 0.2 : 0;
+  const svgLogoBox = options.exportSize * (options.logoSize / 100);
+  const svgLogoCenterX = options.exportSize / 2 + options.exportSize * (options.logoOffsetX / 100);
+  const svgLogoCenterY = options.exportSize / 2 + options.exportSize * (options.logoOffset / 100);
+  const svgLogoClearSize = Math.max(svgLogoBox * options.logoClearance, svgLogoBox + cell * 2);
+  const svgLogoArea = (state.logoDataUrl || options.centerIcon !== "none") && options.logoSize > 0 ? {
+    x: svgLogoCenterX - svgLogoClearSize / 2,
+    y: svgLogoCenterY - svgLogoClearSize / 2,
+    width: svgLogoClearSize,
+    height: svgLogoClearSize,
+  } : null;
 
   for (let y = 0; y < qr.size; y += 1) {
     for (let x = 0; x < qr.size; x += 1) {
       if (!qr.modules[y][x] || isInFinder(x, y, qr.size)) continue;
       const px = offset + x * cell;
       const py = offset + y * cell;
+      if (isInLogoClearArea(px, py, cell, svgLogoArea)) continue;
       if (options.pattern === "dots") {
         parts.push(`<circle cx="${px + cell / 2}" cy="${py + cell / 2}" r="${cell * 0.38}" fill="${options.foreground}"/>`);
       } else if (options.pattern === "diamond") {
@@ -1110,22 +1156,30 @@ function generateSvg(qr, options) {
   eye(offset, offset + (qr.size - 7) * cell);
 
   if (state.logoDataUrl && options.logoSize > 0) {
-    const logoBox = options.exportSize * (options.logoSize / 100);
-    const x = options.exportSize / 2 - logoBox / 2;
-    const y = options.exportSize / 2 - logoBox / 2;
+    const logoBox = svgLogoBox;
+    const x = svgLogoCenterX - logoBox / 2;
+    const y = svgLogoCenterY - logoBox / 2;
     if (options.logoPlate) {
-      const plate = logoBox * 1.22;
-      parts.push(`<rect x="${options.exportSize / 2 - plate / 2}" y="${options.exportSize / 2 - plate / 2}" width="${plate}" height="${plate}" rx="${plate * 0.24}" fill="white" opacity="0.96"/>`);
+      const plate = svgLogoClearSize;
+      parts.push(`<rect x="${svgLogoCenterX - plate / 2}" y="${svgLogoCenterY - plate / 2}" width="${plate}" height="${plate}" rx="${plate * 0.24}" fill="white" opacity="0.96"/>`);
     }
     parts.push(`<image href="${state.logoDataUrl}" x="${x}" y="${y}" width="${logoBox}" height="${logoBox}" preserveAspectRatio="xMidYMid slice"/>`);
   }
 
+  const svgTextX = options.exportSize / 2 + options.exportSize * (options.textOffsetX / 100);
+  const svgTextStartY = options.exportSize + options.exportSize * (0.1 + options.textOffsetY / 100);
+  const svgFont = getFontFamily(options.fontStyle);
+  const svgScale = options.textScale;
+  if (options.cta) {
+    parts.push(`<text x="${svgTextX}" y="${svgTextStartY}" text-anchor="middle" font-family="${svgFont}" font-size="${Math.round(options.exportSize * 0.05 * svgScale)}" font-weight="800" fill="${options.foreground}">${escapeXml(options.cta)}</text>`);
+  }
   if (options.title) {
-    parts.push(`<text x="50%" y="${options.exportSize + 70}" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="${Math.round(options.exportSize * 0.042)}" font-weight="700" fill="${options.foreground}">${escapeXml(options.title)}</text>`);
+    const y = svgTextStartY + (options.cta ? options.exportSize * 0.07 * svgScale : 0);
+    parts.push(`<text x="${svgTextX}" y="${y}" text-anchor="middle" font-family="${svgFont}" font-size="${Math.round(options.exportSize * 0.04 * svgScale)}" font-weight="700" fill="${options.foreground}">${escapeXml(options.title)}</text>`);
   }
   if (options.caption) {
-    const y = options.exportSize + (options.title ? 118 : 66);
-    parts.push(`<text x="50%" y="${y}" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="${Math.round(options.exportSize * 0.024)}" font-weight="500" fill="rgba(29,29,31,0.62)">${escapeXml(options.caption)}</text>`);
+    const y = svgTextStartY + (options.cta ? options.exportSize * 0.07 * svgScale : 0) + (options.title ? options.exportSize * 0.065 * svgScale : 0);
+    parts.push(`<text x="${svgTextX}" y="${y}" text-anchor="middle" font-family="${svgFont}" font-size="${Math.round(options.exportSize * 0.024 * svgScale)}" font-weight="500" fill="rgba(29,29,31,0.62)">${escapeXml(options.caption)}</text>`);
   }
   parts.push("</svg>");
   return parts.join("");
@@ -1485,6 +1539,7 @@ function applyTemplate() {
   dom.foreground.value = preset.fg;
   dom.background.value = preset.bg;
   dom.accent.value = preset.accent;
+  dom.frameColor.value = preset.frameColor;
   dom.pattern.value = preset.pattern;
   dom.frameStyle.value = preset.frame;
   dom.canvasFormat.value = preset.format;
@@ -1598,6 +1653,7 @@ function setupEvents() {
       dom.foreground.value = button.dataset.fg;
       dom.background.value = button.dataset.bg;
       dom.accent.value = button.dataset.accent;
+      dom.frameColor.value = button.dataset.accent;
       render();
     });
   });
