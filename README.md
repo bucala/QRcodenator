@@ -85,6 +85,8 @@ The app is static and uses Firebase from the browser.
 4. Publish the included `firestore.rules`.
 5. Firebase web config je vstavaný v aplikácii, takže v UI sa už nevkladá ručne.
 
+Ak Account Vault zobrazí `auth/configuration-not-found`, Firebase config je načítaný, ale v projekte ešte nie je zapnutý Auth backend. Otvor Firebase Console pre projekt `qrcodenator`, choď do **Authentication > Sign-in method**, povoľ **Email/Password**, ulož zmenu a potom v aplikácii použi **Registrácia** alebo **Prihlásiť** znova.
+
 Použitý Firebase web config JSON:
 
 ```json

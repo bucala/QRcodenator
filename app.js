@@ -144,6 +144,7 @@ const FIREBASE_IMPORTS = {
 };
 const FIREBASE_CONFIG_SEAL = "ClACHw0uCxhWVVBsPxsUPw1uP14eKikJVx8IWU05Rlw9OAUVWW4GERg3JwtVOj4vPipQAVQAABgcaRoEEBsNTV5HHxMXABZIGAABAwYDEwADFwEOFwAPEQRBEUIbQ1lOBF8aAxQRFyYAR1RDBR0RQhIEGw0AQgdLXVAQGwsXDwYRLQdOHQQBTk4PBBsSHQcKCgQaDgZBFEQEBBcNB0gGHR4AAggBSw8RBE1eDxsEBh8VShwHFiEGAQAAHCgQTUgPRFZCX0QYQl5AQ1ddRklMAAQfO0lUW1ddTh9CXkJCVlhTVF9VRlUFSBRbEV8SS0dcQBQBVwEEDVVADEEaEAVFW1YBVwQUExAaFgADBBobO0lUW1crWRxAP0kgKVw8Jz9DCQ==";
 const FIREBASE_CONFIG_SEAL_KEY = "qrcodenator-vault-ui";
+const FIREBASE_PROJECT_ID = "qrcodenator";
 const TEMPLATE_PRESETS = {
   apple: { fg: "#111111", bg: "#f7f7f5", accent: "#007aff", frameColor: "#d8d8d8", pattern: "rounded", frame: "none", format: "card" },
   event: { fg: "#14213d", bg: "#f6f8ff", accent: "#ef476f", frameColor: "#ef476f", pattern: "dots", frame: "ticket", format: "story" },
@@ -1274,7 +1275,35 @@ function setStatus(message, type = "") {
 function setAccountNotice(message, type = "secure") {
   if (!dom.accountNotice) return;
   dom.accountNotice.textContent = message;
+  dom.accountNotice.title = message;
   dom.accountNotice.className = `notice ${type}`;
+}
+
+function getFriendlyFirebaseError(error) {
+  const code = error && error.code ? String(error.code) : "";
+  if (code === "auth/configuration-not-found") {
+    return `Firebase Auth nie je zapnuty pre projekt ${FIREBASE_PROJECT_ID}. V Firebase Console otvor Authentication > Sign-in method a povol Email/Password provider. Potom pouzi Registracia alebo Prihlasit znova.`;
+  }
+  if (code === "auth/operation-not-allowed") {
+    return "Email/Password prihlasovanie nie je povolene. Vo Firebase Console zapni Authentication > Sign-in method > Email/Password.";
+  }
+  if (code === "auth/unauthorized-domain") {
+    return "Tato domena nie je povolena pre Firebase Auth. Vo Firebase Console pridaj aktualnu domenu do Authentication > Settings > Authorized domains.";
+  }
+  if (code === "auth/invalid-credential" || code === "auth/user-not-found" || code === "auth/wrong-password") {
+    return "Email alebo heslo nesedia. Ak ucet este neexistuje, pouzi Registracia.";
+  }
+  if (code === "auth/email-already-in-use") {
+    return "Tento email uz ma Firebase ucet. Pouzi Prihlasit alebo obnov heslo vo Firebase.";
+  }
+  if (code === "auth/weak-password") {
+    return "Firebase heslo je prilis slabe. Pouzi aspon 6 znakov; vault fraza musi mat aspon 12 znakov.";
+  }
+  if (code === "permission-denied") {
+    return "Firestore odmietol pristup. Skontroluj prihlasenie a publikovane firestore.rules.";
+  }
+  const message = error && error.message ? String(error.message) : "Akcia zlyhala";
+  return message.replace(/^Firebase:\s*/i, "").trim();
 }
 
 function render() {
@@ -1563,7 +1592,7 @@ async function guarded(action) {
   try {
     await action();
   } catch (error) {
-    const message = error.message || "Akcia zlyhala";
+    const message = getFriendlyFirebaseError(error);
     setStatus(message, "error");
     setAccountNotice(message, "error");
     dom.status.classList.remove("shake");

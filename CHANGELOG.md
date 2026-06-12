@@ -4,6 +4,17 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-12 - Firebase Auth Diagnostics
+
+Commit: current Firebase diagnostics update
+
+### Changed
+
+- Account Vault now translates Firebase Auth setup errors into actionable Slovak guidance.
+- `auth/configuration-not-found` now points directly to enabling Authentication and the Email/Password provider in Firebase Console.
+- Firebase account notices now keep the full message in the tooltip for compact layouts.
+- README now documents the fix for `auth/configuration-not-found`.
+
 ## 2026-06-12 - Static CI Workflow Fix
 
 Commit: current CI fix
