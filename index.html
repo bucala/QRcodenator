@@ -39,6 +39,8 @@
           <button id="downloadPdf" type="button">PDF</button>
           <button id="copyPng" type="button">Kopirovat</button>
           <button id="copySvg" type="button">SVG clipboard</button>
+          <button id="testScanMode" type="button">Test skenu</button>
+          <button id="exportBundle" type="button">Export balicek</button>
         </div>
       </section>
 
@@ -64,12 +66,22 @@
             Vault fraza
             <input id="vaultPassphrase" type="password" autocomplete="new-password" placeholder="Samostatna sifrovacia fraza" />
           </label>
+          <div class="strength-meter" aria-live="polite">
+            <span>Sila vault frazy</span>
+            <meter id="vaultStrength" min="0" max="100" value="0"></meter>
+          </div>
+          <label>
+            Nove heslo
+            <input id="newAccountPassword" type="password" autocomplete="new-password" placeholder="Nove Firebase heslo" />
+          </label>
 
           <div class="button-grid">
             <button class="primary" id="signIn" type="button">Prihlasit</button>
             <button id="signUp" type="button">Registracia</button>
             <button id="signOut" type="button">Odhlasit</button>
             <button id="resetPassword" type="button">Obnovit heslo</button>
+            <button id="verifyEmail" type="button">Overit email</button>
+            <button id="changePassword" type="button">Zmenit heslo</button>
           </div>
 
           <div class="notice secure" id="accountNotice">
@@ -81,12 +93,26 @@
           <div class="panel-title"><span>Projekty</span></div>
 
           <label>Nazov projektu<input id="projectName" value="Moj QR projekt" /></label>
+          <label>Nazov brand profilu<input id="brandProfileName" value="Default brand" /></label>
           <div class="button-grid">
             <button id="saveLocal" type="button">Ulozit lokalne</button>
             <button id="saveCloud" type="button">Ulozit cloud</button>
             <button id="loadCloud" type="button">Nacitat cloud</button>
             <button id="saveBrand" type="button">Brand kit</button>
+            <button id="duplicateProject" type="button">Duplikovat</button>
+            <button id="exportVault" type="button">Export vault</button>
           </div>
+          <label class="file-control">Import vaultu<input id="importVault" type="file" accept="application/json,.json" /><span class="file-label" id="importVaultLabel">Nie je vybraty ziadny subor</span></label>
+          <div class="two-col">
+            <label>Dynamicky slug<input id="dynamicSlug" placeholder="moja-kampan" /></label>
+            <label>Cielova URL<input id="dynamicTargetUrl" placeholder="https://..." /></label>
+          </div>
+          <div class="button-grid">
+            <button id="saveDynamic" type="button">Ulozit dynamicky QR</button>
+            <button id="useDynamic" type="button">Pouzit redirect</button>
+            <button id="loadDynamicStats" type="button">Statistiky</button>
+          </div>
+          <div class="notice" id="dynamicStats">Dynamicky QR uklada cielovu URL do Firestore a QR moze ostat rovnaky.</div>
           <div class="lists">
             <div>
               <h2>Historia</h2>
@@ -95,6 +121,10 @@
             <div>
               <h2>Projekty</h2>
               <div id="projectList" class="item-list"></div>
+            </div>
+            <div>
+              <h2>Brand profily</h2>
+              <div id="brandProfileList" class="item-list"></div>
             </div>
           </div>
         </section>
@@ -369,6 +399,14 @@
               </select>
             </label>
           </div>
+          <div class="frame-gallery" id="frameGallery" aria-label="Galeria ramov">
+            <button type="button" data-frame="none">Bez ramu</button>
+            <button type="button" data-frame="line">Linka</button>
+            <button type="button" data-frame="ticket">Ticket</button>
+            <button type="button" data-frame="badge">Badge</button>
+            <button type="button" data-frame="scanbar">Scan bar</button>
+            <button type="button" data-frame="poster">Poster</button>
+          </div>
 
           <label class="file-control">Obrazok v strede<input id="logoInput" type="file" accept="image/*" /><span class="file-label" id="logoFileLabel">Nie je vybraty ziadny subor</span></label>
           <div class="two-col">
@@ -382,6 +420,14 @@
 
           <label class="range-row">Velkost loga<input id="logoSize" type="range" min="0" max="30" value="18" /><output id="logoSizeValue">18%</output></label>
           <label class="check-row"><input id="logoPlate" type="checkbox" checked /> Biela podlozka pod logom</label>
+          <div class="logo-presets" id="logoPresets" aria-label="Logo presety">
+            <button type="button" data-icon="none">Bez ikony</button>
+            <button type="button" data-icon="link">Web</button>
+            <button type="button" data-icon="wifi">Wi-Fi</button>
+            <button type="button" data-icon="mail">Mail</button>
+            <button type="button" data-icon="instagram">Instagram</button>
+            <button type="button" data-icon="whatsapp">WhatsApp</button>
+          </div>
         </section>
 
         <section class="panel">
@@ -411,6 +457,7 @@
           <label class="range-row">Okraj<input id="quietZone" type="range" min="2" max="8" value="4" /><output id="quietZoneValue">4</output></label>
           <label class="range-row">Simulacia tlace<input id="printBlur" type="range" min="0" max="6" value="0" /><output id="printBlurValue">0</output></label>
           <label class="check-row"><input id="scanSafe" type="checkbox" checked /> Scan-safe render pre mobilne skenery</label>
+          <label class="check-row"><input id="animatePreview" type="checkbox" /> Animovany preview rezim</label>
           <div class="notice" id="readabilityNotes">Kontrast a logo su v norme.</div>
         </section>
 

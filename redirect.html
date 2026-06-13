@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="sk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QRcodenator redirect</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        color: #1d1d1f;
+        background: #f5f5f7;
+      }
+
+      main {
+        width: min(420px, calc(100vw - 32px));
+        padding: 28px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.86);
+        box-shadow: 0 24px 80px rgba(20, 20, 30, 0.12);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 24px;
+      }
+
+      p {
+        margin: 0;
+        color: #6e6e73;
+        line-height: 1.45;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Presmerovanie...</h1>
+      <p id="message">Overujem dynamicky QR kod.</p>
+    </main>
+
+    <script type="module">
+      const FIREBASE_VERSION = "12.14.0";
+      const FIREBASE_CONFIG_SEAL = "ClACHw0uCxhWVVBsPxsUPw1uP14eKikJVx8IWU05Rlw9OAUVWW4GERg3JwtVOj4vPipQAVQAABgcaRoEEBsNTV5HHxMXABZIGAABAwYDEwADFwEOFwAPEQRBEUIbQ1lOBF8aAxQRFyYAR1RDBR0RQhIEGw0AQgdLXVAQGwsXDwYRLQdOHQQBTk4PBBsSHQcKCgQaDgZBFEQEBBcNB0gGHR4AAggBSw8RBE1eDxsEBh8VShwHFiEGAQAAHCgQTUgPRFZCX0QYQl5AQ1ddRklMAAQfO0lUW1ddTh9CXkJCVlhTVF9VRlUFSBRbEV8SS0dcQBQBVwEEDVVADEEaEAVFW1YBVwQUExAaFgADBBobO0lUW1crWRxAP0kgKVw8Jz9DCQ==";
+      const FIREBASE_CONFIG_SEAL_KEY = "qrcodenator-vault-ui";
+
+      function base64ToBytes(value) {
+        const binary = atob(value);
+        return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      }
+
+      function openEmbeddedFirebaseConfig() {
+        const bytes = base64ToBytes(FIREBASE_CONFIG_SEAL);
+        const text = Array.from(bytes, (byte, index) => (
+          String.fromCharCode(byte ^ FIREBASE_CONFIG_SEAL_KEY.charCodeAt(index % FIREBASE_CONFIG_SEAL_KEY.length))
+        )).join("");
+        return JSON.parse(text);
+      }
+
+      const message = document.querySelector("#message");
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("id");
+
+      try {
+        if (!slug || !/^[a-z0-9-]{1,64}$/.test(slug)) throw new Error("Neplatny QR identifikator.");
+
+        const [{ initializeApp }, firestore] = await Promise.all([
+          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`),
+          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`),
+        ]);
+        const app = initializeApp(openEmbeddedFirebaseConfig());
+        const db = firestore.getFirestore(app);
+        const ref = firestore.doc(db, "redirects", slug);
+        const snap = await firestore.getDoc(ref);
+        if (!snap.exists()) throw new Error("Dynamicky QR kod neexistuje.");
+
+        const data = snap.data();
+        if (!data.active || !/^https?:\/\//i.test(data.targetUrl || "")) throw new Error("Dynamicky QR kod nie je aktivny.");
+        await firestore.updateDoc(ref, { scanCount: firestore.increment(1) }).catch(() => {});
+        window.location.replace(data.targetUrl);
+      } catch (error) {
+        message.textContent = error.message || "Presmerovanie zlyhalo.";
+      }
+    </script>
+  </body>
+</html>

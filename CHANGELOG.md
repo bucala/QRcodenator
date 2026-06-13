@@ -4,6 +4,30 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-13 - Advanced Studio Workflow Expansion
+
+Commit: current advanced workflow update
+
+### Added
+
+- Added scan test mode that opens a clean black-on-white QR render for phone camera validation.
+- Added project export bundle with JSON, SVG, and PNG outputs.
+- Added project duplication into local storage.
+- Added encrypted vault export and import flows using the existing AES-GCM vault encryption.
+- Added vault phrase strength meter.
+- Added Firebase email verification and signed-in password change actions.
+- Added named brand kit profiles and a clickable brand profile list.
+- Added frame gallery shortcuts and logo preset shortcuts.
+- Added animated preview mode for presentation-only canvas motion.
+- Added dynamic QR redirects backed by Firestore slug documents.
+- Added scan counting for dynamic QR redirects through `redirect.html`.
+
+### Changed
+
+- Updated Firestore rules to keep user projects private while allowing active dynamic redirects to be read publicly.
+- Restricted public dynamic QR writes to a single `scanCount` increment.
+- README now documents dynamic QR, scan analytics, vault import/export, scan test mode, and the expanded account workflow.
+
 ## 2026-06-13 - English Translation Audit
 
 Commit: current translation update

@@ -10,10 +10,14 @@ const dom = {
   accountEmail: document.querySelector("#accountEmail"),
   accountPassword: document.querySelector("#accountPassword"),
   vaultPassphrase: document.querySelector("#vaultPassphrase"),
+  vaultStrength: document.querySelector("#vaultStrength"),
+  newAccountPassword: document.querySelector("#newAccountPassword"),
   signUp: document.querySelector("#signUp"),
   signIn: document.querySelector("#signIn"),
   signOut: document.querySelector("#signOut"),
   resetPassword: document.querySelector("#resetPassword"),
+  verifyEmail: document.querySelector("#verifyEmail"),
+  changePassword: document.querySelector("#changePassword"),
   contentMode: document.querySelector("#contentMode"),
   text: document.querySelector("#qrText"),
   urlValue: document.querySelector("#urlValue"),
@@ -92,20 +96,37 @@ const dom = {
   printBlur: document.querySelector("#printBlur"),
   printBlurValue: document.querySelector("#printBlurValue"),
   scanSafe: document.querySelector("#scanSafe"),
+  animatePreview: document.querySelector("#animatePreview"),
   downloadPng: document.querySelector("#downloadPng"),
   downloadJpg: document.querySelector("#downloadJpg"),
   downloadSvg: document.querySelector("#downloadSvg"),
   downloadPdf: document.querySelector("#downloadPdf"),
   copyPng: document.querySelector("#copyPng"),
   copySvg: document.querySelector("#copySvg"),
+  testScanMode: document.querySelector("#testScanMode"),
+  exportBundle: document.querySelector("#exportBundle"),
   swatches: document.querySelector("#swatches"),
+  frameGallery: document.querySelector("#frameGallery"),
+  logoPresets: document.querySelector("#logoPresets"),
   projectName: document.querySelector("#projectName"),
+  brandProfileName: document.querySelector("#brandProfileName"),
   saveLocal: document.querySelector("#saveLocal"),
   saveCloud: document.querySelector("#saveCloud"),
   loadCloud: document.querySelector("#loadCloud"),
   saveBrand: document.querySelector("#saveBrand"),
+  duplicateProject: document.querySelector("#duplicateProject"),
+  exportVault: document.querySelector("#exportVault"),
+  importVault: document.querySelector("#importVault"),
+  importVaultLabel: document.querySelector("#importVaultLabel"),
+  dynamicSlug: document.querySelector("#dynamicSlug"),
+  dynamicTargetUrl: document.querySelector("#dynamicTargetUrl"),
+  saveDynamic: document.querySelector("#saveDynamic"),
+  useDynamic: document.querySelector("#useDynamic"),
+  loadDynamicStats: document.querySelector("#loadDynamicStats"),
+  dynamicStats: document.querySelector("#dynamicStats"),
   historyList: document.querySelector("#historyList"),
   projectList: document.querySelector("#projectList"),
+  brandProfileList: document.querySelector("#brandProfileList"),
 };
 
 const state = {
@@ -151,6 +172,7 @@ const STORAGE_KEYS = {
   projects: "qrcodenator.projects",
   history: "qrcodenator.history",
   brand: "qrcodenator.brand",
+  brandProfiles: "qrcodenator.brandProfiles",
   vaultSalt: "qrcodenator.vaultSalt",
   collapsedPanels: "qrcodenator.collapsedPanels",
   theme: "qrcodenator.theme",
@@ -180,10 +202,30 @@ const UI_TRANSLATIONS = {
     "Registracia": "Sign up",
     "Odhlasit": "Sign out",
     "Obnovit heslo": "Reset password",
+    "Overit email": "Verify email",
+    "Zmenit heslo": "Change password",
+    "Nove heslo": "New password",
+    "Nove Firebase heslo": "New Firebase password",
+    "Sila vault frazy": "Vault phrase strength",
     "Ulozit lokalne": "Save local",
     "Ulozit cloud": "Save cloud",
     "Nacitat cloud": "Load cloud",
+    "Duplikovat": "Duplicate",
+    "Export vault": "Export vault",
+    "Import vaultu": "Import vault",
+    "Test skenu": "Scan test",
+    "Export balicek": "Export bundle",
     "Historia": "History",
+    "Brand profily": "Brand profiles",
+    "Nazov brand profilu": "Brand profile name",
+    "Default brand": "Default brand",
+    "Dynamicky slug": "Dynamic slug",
+    "Cielova URL": "Target URL",
+    "moja-kampan": "my-campaign",
+    "Ulozit dynamicky QR": "Save dynamic QR",
+    "Pouzit redirect": "Use redirect",
+    "Statistiky": "Stats",
+    "Dynamicky QR uklada cielovu URL do Firestore a QR moze ostat rovnaky.": "Dynamic QR stores the target URL in Firestore so the QR code can stay unchanged.",
     "Pripravene": "Ready",
     "Firebase heslo": "Firebase password",
     "Vault fraza": "Vault phrase",
@@ -262,7 +304,9 @@ const UI_TRANSLATIONS = {
     "Transparentne": "Transparent",
     "Oramovanie": "Frame style",
     "Bez ramu": "No frame",
+    "Linka": "Line",
     "Tenka linka": "Thin line",
+    "Tenká linka": "Thin line",
     "Format": "Format",
     "Stvorec": "Square",
     "Vizitka": "Business card",
@@ -281,6 +325,7 @@ const UI_TRANSLATIONS = {
     "Cista zona": "Clear zone",
     "Velkost loga": "Logo size",
     "Biela podlozka pod logom": "White logo plate",
+    "Animovany preview rezim": "Animated preview mode",
     "Velkost": "Size",
     "Korekcia": "Correction",
     "Okraj": "Quiet zone",
@@ -1097,6 +1142,7 @@ function getOptions() {
     exportSize: Number(dom.exportSize.value),
     quietZone: Number(dom.quietZone.value),
     scanSafe: dom.scanSafe.checked,
+    animatePreview: Boolean(dom.animatePreview && dom.animatePreview.checked),
     ecl: dom.scanSafe.checked ? "Q" : dom.errorCorrection.value,
     printBlur: Number(dom.printBlur.value),
   };
@@ -1593,6 +1639,9 @@ function getFriendlyFirebaseError(error) {
   if (code === "auth/weak-password") {
     return "Firebase heslo je prilis slabe. Pouzi aspon 6 znakov; vault fraza musi mat aspon 12 znakov.";
   }
+  if (code === "auth/requires-recent-login") {
+    return "Firebase vyzaduje cerstve prihlasenie. Odhlaste sa, prihlaste znova a potom zopakujte zmenu hesla.";
+  }
   if (code === "permission-denied") {
     return "Firestore odmietol pristup. Skontroluj prihlasenie a publikovane firestore.rules.";
   }
@@ -1608,6 +1657,7 @@ function render() {
   dom.quietZoneValue.textContent = String(options.quietZone);
   dom.printBlurValue.textContent = String(options.printBlur);
   document.documentElement.style.setProperty("--accent", options.accent);
+  dom.canvas.classList.toggle("preview-animated", options.animatePreview);
 
   try {
     const qr = generateQr(options.text, options.ecl);
@@ -1634,6 +1684,13 @@ function download(name, url) {
   link.download = name;
   link.href = url;
   link.click();
+}
+
+function downloadBlob(name, content, type = "application/json") {
+  const blob = content instanceof Blob ? content : new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  download(name, url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function getFileStamp() {
@@ -1708,8 +1765,9 @@ function initPreferences() {
 
 function collectFormState() {
   const fields = {};
+  const excluded = new Set(["accountPassword", "vaultPassphrase", "newAccountPassword", "logoInput", "importVault"]);
   document.querySelectorAll("input, textarea, select").forEach((control) => {
-    if (!control.id || ["accountPassword", "vaultPassphrase"].includes(control.id)) return;
+    if (!control.id || excluded.has(control.id)) return;
     fields[control.id] = control.type === "checkbox" ? control.checked : control.value;
   });
   return {
@@ -1768,23 +1826,44 @@ function saveLocalProject() {
 }
 
 function saveBrandKit() {
-  writeJson(STORAGE_KEYS.brand, {
+  const profile = {
+    id: crypto.randomUUID(),
+    name: safeValue(dom.brandProfileName) || "Default brand",
     foreground: dom.foreground.value,
     background: dom.background.value,
     accent: dom.accent.value,
+    frameColor: dom.frameColor.value,
     fontStyle: dom.fontStyle.value,
+    pattern: dom.pattern.value,
+    eyeStyle: dom.eyeStyle.value,
+    frameStyle: dom.frameStyle.value,
     logoDataUrl: state.logoDataUrl,
-  });
+    createdAt: new Date().toISOString(),
+  };
+  writeJson(STORAGE_KEYS.brand, profile);
+  const profiles = readJson(STORAGE_KEYS.brandProfiles, []);
+  const next = [profile, ...profiles.filter((item) => item.name !== profile.name)].slice(0, 12);
+  writeJson(STORAGE_KEYS.brandProfiles, next);
+  renderBrandProfiles();
   setStatus("Brand kit ulozeny", "success");
 }
 
 function loadBrandKit() {
-  const brand = readJson(STORAGE_KEYS.brand, null);
+  const brand = readJson(STORAGE_KEYS.brand, null) || readJson(STORAGE_KEYS.brandProfiles, [])[0];
   if (!brand) return;
+  applyBrandProfile(brand, false);
+}
+
+function applyBrandProfile(brand, shouldNotify = true) {
   dom.foreground.value = brand.foreground || dom.foreground.value;
   dom.background.value = brand.background || dom.background.value;
   dom.accent.value = brand.accent || dom.accent.value;
+  dom.frameColor.value = brand.frameColor || dom.frameColor.value;
   dom.fontStyle.value = brand.fontStyle || dom.fontStyle.value;
+  dom.pattern.value = brand.pattern || dom.pattern.value;
+  dom.eyeStyle.value = brand.eyeStyle || dom.eyeStyle.value;
+  dom.frameStyle.value = brand.frameStyle || dom.frameStyle.value;
+  if (dom.brandProfileName) dom.brandProfileName.value = brand.name || dom.brandProfileName.value;
   if (brand.logoDataUrl) {
     const image = new Image();
     image.onload = () => {
@@ -1793,7 +1872,62 @@ function loadBrandKit() {
       render();
     };
     image.src = brand.logoDataUrl;
+  } else {
+    state.logoImage = null;
+    state.logoDataUrl = "";
+    if (dom.logoFileLabel) dom.logoFileLabel.textContent = translateText("Nie je vybraty ziadny subor", getLanguage());
   }
+  if (shouldNotify) setStatus("Brand profil nacitany", "success");
+  render();
+}
+
+function renderBrandProfiles() {
+  if (!dom.brandProfileList) return;
+  const profiles = readJson(STORAGE_KEYS.brandProfiles, []);
+  dom.brandProfileList.replaceChildren(...profiles.map((profile) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "item-card";
+    button.innerHTML = `<strong>${escapeXml(profile.name || "Brand")}</strong><span>${new Date(profile.createdAt || Date.now()).toLocaleString("sk-SK")}</span>`;
+    button.addEventListener("click", () => applyBrandProfile(profile));
+    return button;
+  }));
+}
+
+function duplicateCurrentProject() {
+  const projects = readJson(STORAGE_KEYS.projects, []);
+  const snapshot = collectFormState();
+  snapshot.id = crypto.randomUUID();
+  snapshot.name = `${snapshot.name || "QR projekt"} copy`;
+  snapshot.createdAt = new Date().toISOString();
+  writeJson(STORAGE_KEYS.projects, [snapshot, ...projects].slice(0, 30));
+  renderLists();
+  setStatus("Projekt duplikovany", "success");
+}
+
+async function exportEncryptedVault() {
+  const encrypted = await encryptProject(collectFormState());
+  downloadBlob(`qrcodenator-vault-${getFileStamp()}.json`, JSON.stringify(encrypted, null, 2));
+  setStatus("Vault exportovany", "success");
+}
+
+async function importEncryptedVaultFile(file) {
+  const record = JSON.parse(await file.text());
+  const project = await decryptProject(record);
+  applyFormState(project);
+  if (dom.importVaultLabel) dom.importVaultLabel.textContent = file.name;
+  setStatus("Vault importovany", "success");
+}
+
+function exportProjectBundle() {
+  const options = getOptions();
+  const qr = state.lastQr || generateQr(options.text, options.ecl);
+  const project = collectFormState();
+  downloadBlob(`qrcodenator-project-${getFileStamp()}.json`, JSON.stringify(project, null, 2));
+  downloadBlob(`qrcodenator-${getFileStamp()}.svg`, generateSvg(qr, options), "image/svg+xml");
+  download(`qrcodenator-${getFileStamp()}.png`, dom.canvas.toDataURL("image/png"));
+  saveHistory();
+  setStatus("Export balicek pripraveny", "success");
 }
 
 function renderLists() {
@@ -1930,6 +2064,45 @@ async function resetPassword() {
   setAccountNotice(`Poslali sme email na obnovu hesla pre ${email}. Skontroluj aj spam.`, "secure");
 }
 
+async function verifyEmail() {
+  const fb = await initFirebase();
+  const user = fb.auth.currentUser;
+  if (!user) throw new Error("Najprv sa prihlaste.");
+  await fb.authMod.sendEmailVerification(user);
+  setStatus("Overenie odoslane", "success");
+  setAccountNotice(`Overovaci email bol odoslany na ${user.email}.`, "secure");
+}
+
+async function changePassword() {
+  const fb = await initFirebase();
+  const user = fb.auth.currentUser;
+  if (!user) throw new Error("Najprv sa prihlaste.");
+  const password = dom.newAccountPassword ? dom.newAccountPassword.value : "";
+  if (password.length < 8) throw new Error("Nove heslo musi mat aspon 8 znakov.");
+  await fb.authMod.updatePassword(user, password);
+  dom.newAccountPassword.value = "";
+  setStatus("Heslo zmenene", "success");
+  setAccountNotice("Heslo bolo zmenene. Ak Firebase vyziada cerstve prihlasenie, odhlaste sa a prihlaste znova.", "secure");
+}
+
+function getVaultStrength(value) {
+  if (!value) return 0;
+  let score = Math.min(45, value.length * 3);
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score += 15;
+  if (/\d/.test(value)) score += 15;
+  if (/[^a-zA-Z0-9]/.test(value)) score += 15;
+  if (value.length >= 20) score += 10;
+  if (/(.)\1{2,}/.test(value)) score -= 20;
+  return Math.max(0, Math.min(100, score));
+}
+
+function updateVaultStrength() {
+  if (!dom.vaultStrength) return;
+  const score = getVaultStrength(dom.vaultPassphrase.value);
+  dom.vaultStrength.value = score;
+  dom.vaultStrength.dataset.level = score >= 78 ? "good" : score >= 50 ? "warn" : "bad";
+}
+
 async function saveCloudProject() {
   const fb = await initFirebase();
   const user = fb.auth.currentUser;
@@ -1950,6 +2123,74 @@ async function loadCloudProject() {
   applyFormState(project);
   setStatus("Cloud nacitany", "success");
   setAccountNotice("Cloud projekt bol nacitany a desifrovany vo vasom prehliadaci.", "secure");
+}
+
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+}
+
+function getRedirectUrl(slug) {
+  const path = window.location.pathname.replace(/[^/]*$/, "redirect.html");
+  return `${window.location.origin}${path}?id=${encodeURIComponent(slug)}`;
+}
+
+function getDynamicTarget() {
+  return safeValue(dom.dynamicTargetUrl) || safeValue(dom.urlValue) || safeValue(dom.text);
+}
+
+async function saveDynamicQr() {
+  const fb = await initFirebase();
+  const user = fb.auth.currentUser;
+  if (!user) throw new Error("Najprv sa prihlaste.");
+  const slug = slugify(dom.dynamicSlug.value || dom.projectName.value);
+  const targetUrl = getDynamicTarget();
+  if (!slug) throw new Error("Zadaj dynamicky slug.");
+  if (!/^https?:\/\//i.test(targetUrl)) throw new Error("Cielova URL musi zacinat http:// alebo https://.");
+  const ref = fb.firestoreMod.doc(fb.db, "redirects", slug);
+  const snap = await fb.firestoreMod.getDoc(ref);
+  const payload = {
+    ownerUid: user.uid,
+    targetUrl,
+    active: true,
+    updatedAt: fb.firestoreMod.serverTimestamp(),
+  };
+  if (!snap.exists()) payload.scanCount = 0;
+  await fb.firestoreMod.setDoc(ref, payload, { merge: true });
+  dom.dynamicSlug.value = slug;
+  dom.dynamicTargetUrl.value = targetUrl;
+  dom.dynamicStats.textContent = `Redirect ${getRedirectUrl(slug)} je ulozeny.`;
+  setStatus("Dynamicky QR ulozeny", "success");
+}
+
+function useDynamicQr() {
+  const slug = slugify(dom.dynamicSlug.value || dom.projectName.value);
+  if (!slug) {
+    setStatus("Zadaj dynamicky slug", "error");
+    return;
+  }
+  dom.dynamicSlug.value = slug;
+  dom.contentMode.value = "url";
+  dom.urlValue.value = getRedirectUrl(slug);
+  setActiveContentFields();
+  render();
+  setStatus("Redirect vlozeny do QR", "success");
+}
+
+async function loadDynamicStats() {
+  const fb = await initFirebase();
+  const slug = slugify(dom.dynamicSlug.value || dom.projectName.value);
+  if (!slug) throw new Error("Zadaj dynamicky slug.");
+  const snap = await fb.firestoreMod.getDoc(fb.firestoreMod.doc(fb.db, "redirects", slug));
+  if (!snap.exists()) throw new Error("Dynamicky QR este neexistuje.");
+  const data = snap.data();
+  dom.dynamicStats.textContent = `Skeny: ${data.scanCount || 0}. Ciel: ${data.targetUrl || ""}`;
+  setStatus("Statistiky nacitane", "success");
 }
 
 async function guarded(action) {
@@ -2026,9 +2267,48 @@ function setupCollapsiblePanels() {
   });
 }
 
+function openScanTestMode() {
+  const baseOptions = getOptions();
+  const testOptions = {
+    ...baseOptions,
+    title: "",
+    cta: "",
+    caption: "",
+    topLabel: "",
+    footer: "",
+    pattern: "square",
+    eyeStyle: "classic",
+    foreground: "#000000",
+    background: "#ffffff",
+    accent: "#000000",
+    frameStyle: "none",
+    gradient: "none",
+    backgroundStyle: "solid",
+    canvasFormat: "square",
+    centerIcon: "none",
+    logoSize: 0,
+    logoPlate: false,
+    quietZone: Math.max(6, baseOptions.quietZone),
+    scanSafe: true,
+    ecl: "Q",
+    printBlur: 0,
+    exportSize: 1280,
+  };
+  const qr = generateQr(testOptions.text, testOptions.ecl);
+  const svg = generateSvg(qr, testOptions);
+  const popup = window.open("", "_blank");
+  if (!popup) {
+    setStatus("Popup blokovany", "error");
+    return;
+  }
+  popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>QR scan test</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fff;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}.wrap{width:min(92vmin,900px)}svg{width:100%;height:auto;display:block}.hint{text-align:center;color:#333;font-weight:700;margin-top:18px}</style></head><body><main class="wrap">${svg}<p class="hint">Scan test render</p></main></body></html>`);
+  popup.document.close();
+  setStatus("Test skenu otvoreny", "success");
+}
+
 function setupEvents() {
   document.querySelectorAll("input, textarea, select").forEach((control) => {
-    const shouldRender = !["accountEmail", "accountPassword", "vaultPassphrase", "qrText"].includes(control.id);
+    const shouldRender = !["accountEmail", "accountPassword", "vaultPassphrase", "newAccountPassword", "qrText", "importVault"].includes(control.id);
     if (shouldRender) {
       control.addEventListener("input", render);
       control.addEventListener("change", render);
@@ -2061,10 +2341,29 @@ function setupEvents() {
   dom.signIn.addEventListener("click", () => guarded(signIn));
   dom.signOut.addEventListener("click", () => guarded(signOut));
   dom.resetPassword.addEventListener("click", () => guarded(resetPassword));
+  dom.verifyEmail.addEventListener("click", () => guarded(verifyEmail));
+  dom.changePassword.addEventListener("click", () => guarded(changePassword));
+  dom.vaultPassphrase.addEventListener("input", updateVaultStrength);
   dom.saveLocal.addEventListener("click", saveLocalProject);
   dom.saveBrand.addEventListener("click", saveBrandKit);
+  dom.duplicateProject.addEventListener("click", duplicateCurrentProject);
+  dom.exportVault.addEventListener("click", () => guarded(exportEncryptedVault));
   dom.saveCloud.addEventListener("click", () => guarded(saveCloudProject));
   dom.loadCloud.addEventListener("click", () => guarded(loadCloudProject));
+  dom.saveDynamic.addEventListener("click", () => guarded(saveDynamicQr));
+  dom.useDynamic.addEventListener("click", useDynamicQr);
+  dom.loadDynamicStats.addEventListener("click", () => guarded(loadDynamicStats));
+  dom.testScanMode.addEventListener("click", openScanTestMode);
+  dom.exportBundle.addEventListener("click", exportProjectBundle);
+
+  dom.importVault.addEventListener("change", () => {
+    const file = dom.importVault.files && dom.importVault.files[0];
+    if (!file) {
+      if (dom.importVaultLabel) dom.importVaultLabel.textContent = translateText("Nie je vybraty ziadny subor", getLanguage());
+      return;
+    }
+    guarded(() => importEncryptedVaultFile(file));
+  });
 
   dom.logoInput.addEventListener("change", () => {
     const file = dom.logoInput.files && dom.logoInput.files[0];
@@ -2098,6 +2397,22 @@ function setupEvents() {
       dom.background.value = button.dataset.bg;
       dom.accent.value = button.dataset.accent;
       dom.frameColor.value = button.dataset.accent;
+      render();
+    });
+  });
+
+  dom.frameGallery.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => {
+      dom.frameStyle.value = button.dataset.frame;
+      render();
+    });
+  });
+
+  dom.logoPresets.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => {
+      dom.centerIcon.value = button.dataset.icon;
+      if (button.dataset.icon === "none") dom.logoSize.value = "0";
+      else dom.logoSize.value = String(Math.max(Number(dom.logoSize.value), 16));
       render();
     });
   });
@@ -2163,6 +2478,8 @@ function boot() {
   loadBrandKit();
   setActiveContentFields();
   renderLists();
+  renderBrandProfiles();
+  updateVaultStrength();
   setupEvents();
   render();
 }

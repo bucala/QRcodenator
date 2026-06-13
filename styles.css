@@ -268,7 +268,8 @@ h2 {
   grid-template-areas:
     "signin signin"
     "signup signout"
-    "reset reset";
+    "reset reset"
+    "verify change";
   gap: 10px;
 }
 
@@ -286,6 +287,14 @@ h2 {
 
 #resetPassword {
   grid-area: reset;
+}
+
+#verifyEmail {
+  grid-area: verify;
+}
+
+#changePassword {
+  grid-area: change;
 }
 
 .panel-title {
@@ -411,10 +420,16 @@ label + .button-grid,
 .button-grid + .notice,
 .button-grid + .lists,
 .file-control + .two-col,
+.file-control + .frame-gallery,
+.file-control + .logo-presets,
+.strength-meter + label,
 .two-col + .range-row,
+.two-col + .button-grid,
+.two-col + .notice,
 .range-row + .range-row,
 .range-row + .check-row,
 .range-row + .notice,
+.check-row + .notice,
 .content-fields,
 .advanced,
 .field-group > label + label,
@@ -528,6 +543,37 @@ input[type="range"] {
   accent-color: var(--accent);
 }
 
+.strength-meter {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.strength-meter meter {
+  width: 100%;
+  height: 12px;
+}
+
+.frame-gallery,
+.logo-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.frame-gallery button,
+.logo-presets button {
+  min-height: 38px;
+  border-radius: 14px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .swatches {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -610,6 +656,22 @@ input[type="range"] {
 
 .shake {
   animation: shake 240ms ease-in-out;
+}
+
+#qrCanvas.preview-animated {
+  animation: previewFloat 2.8s ease-in-out infinite;
+}
+
+@keyframes previewFloat {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    filter: saturate(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.006);
+    filter: saturate(1.08);
+  }
 }
 
 @keyframes shake {

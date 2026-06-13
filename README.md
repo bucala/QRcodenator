@@ -23,6 +23,7 @@ Apple-style QR studio for classic and visual QR codes with templates, frames, la
 - Live QR rendering with selectable correction level and quiet zone.
 - QR matrix generation uses the pinned `qrcode-generator@1.4.4` browser library with SRI, with the built-in encoder kept as an offline fallback.
 - Pattern styles: classic, rounded, dots, diamond, and soft grid.
+- Advanced pattern styles include mosaic and connected modules.
 - Finder eye styles: classic, rounded, and circular.
 - Readability score with warnings for contrast, logo size, quiet zone, and decorative choices.
 
@@ -64,6 +65,8 @@ Apple-style QR studio for classic and visual QR codes with templates, frames, la
 - PDF through print/save dialog.
 - Copy PNG to clipboard.
 - Copy SVG markup to clipboard.
+- Scan test mode opens a clean black-on-white QR for phone camera validation.
+- Export bundle downloads the current project JSON, SVG, and PNG together.
 
 </details>
 
@@ -72,8 +75,20 @@ Apple-style QR studio for classic and visual QR codes with templates, frames, la
 
 - Local project save/load in the browser.
 - Recent history list.
-- Brand kit with colors, font style, and logo.
+- Duplicate the active project into local storage.
+- Brand kit profiles with colors, pattern, frame style, font style, and logo.
+- Encrypted vault export/import for portable backups.
 - Cloud save/load through Firebase after sign-in and vault setup.
+
+</details>
+
+<details>
+<summary><strong>Dynamic QR And Scan Analytics</strong></summary>
+
+- Dynamic QR stores a slug and target URL in Firestore.
+- The visible QR can point to `redirect.html?id=slug`, so the target can change later without regenerating the printed QR.
+- The redirect page increments a scan counter before forwarding visitors.
+- Firestore rules allow public reads for active redirect documents and public writes only for incrementing `scanCount` by one.
 
 </details>
 
@@ -86,25 +101,11 @@ The app is static and uses Firebase from the browser.
 2. Enable Authentication with Email/Password.
 3. Enable Cloud Firestore.
 4. Publish the included `firestore.rules`.
-5. Firebase web config je vstavaný v aplikácii, takže v UI sa už nevkladá ručne.
+5. Firebase web config is packaged in the static app, so the UI no longer asks for manual API config.
 
 Ak Account Vault zobrazí `auth/configuration-not-found`, Firebase config je načítaný, ale v projekte ešte nie je zapnutý Auth backend. Otvor Firebase Console pre projekt `qrcodenator`, choď do **Authentication > Sign-in method**, povoľ **Email/Password**, ulož zmenu a potom v aplikácii použi **Registrácia** alebo **Prihlásiť** znova.
 
-Použitý Firebase web config JSON:
-
-```json
-{
-  "apiKey": "AIzaSyCJ7oXJf3zf89V4qKYpy-CsxiEDd1_PNJE",
-  "authDomain": "qrcodenator.firebaseapp.com",
-  "projectId": "qrcodenator",
-  "storageBucket": "qrcodenator.firebasestorage.app",
-  "messagingSenderId": "277305771142",
-  "appId": "1:277305771142:web:d3ff251fb8eac44c37fd07",
-  "measurementId": "G-15V8RJ3XBQ"
-}
-```
-
-The UI no longer exposes a config textarea. The config is packaged in `app.js` to keep the Account Vault workflow simple. Firebase web config values are public identifiers; project data security still depends on Auth, Firestore rules, and client-side vault encryption.
+The UI no longer exposes a config textarea. The config is packaged in `app.js` and `redirect.html` to keep the Account Vault workflow simple. Firebase web config values are public identifiers; project data security still depends on Auth, Firestore rules, and client-side vault encryption.
 
 </details>
 
@@ -113,12 +114,15 @@ The UI no longer exposes a config textarea. The config is packaged in `app.js` t
 
 - Firebase password authenticates the account.
 - Account panel can send a Firebase password reset email to the entered account email.
+- Account panel can send Firebase email verification and update the signed-in password.
 - A separate Vault phrase derives the local encryption key.
+- Vault phrase strength is scored locally before encrypted cloud or vault export operations.
 - The Vault phrase is not stored and is not sent to Firebase.
 - Cloud project payloads are encrypted in the browser with Web Crypto.
 - Key derivation: PBKDF2-SHA-256.
 - Encryption: AES-GCM.
 - Firestore rules restrict project access to `users/{uid}/projects/{projectId}` for the matching signed-in user.
+- Dynamic QR documents are public only for active redirect lookup and scan count incrementing.
 
 </details>
 
@@ -127,6 +131,7 @@ The UI no longer exposes a config textarea. The config is packaged in `app.js` t
 | File | Purpose |
 | --- | --- |
 | `index.html` | App UI and controls |
+| `redirect.html` | Dynamic QR redirect and scan counter |
 | `styles.css` | Apple-style responsive interface |
 | `app.js` | QR generation, rendering, exports, local storage, Firebase vault |
 | `firebase-config.json` | Firebase web config reference used by the embedded app config |
