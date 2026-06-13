@@ -37,7 +37,7 @@ Apple-style QR studio for classic and visual QR codes with templates, frames, la
 - Background styles: solid, soft wash, subtle grid, and transparent.
 - Gradients: none, linear, and radial, including large QR codes when scan-safe mode is enabled.
 - Theme switch: light and dark interface modes.
-- Language switch: Slovak and English UI labels.
+- Language switch: Slovak and English UI labels, including select choices and form placeholders.
 - Font styles: neutral, elegant, bold, and mono.
 - Text controls: CTA, title, caption, top label, footer, text size, and X/Y text offset.
 

@@ -463,7 +463,41 @@ input[type="color"] {
 }
 
 input[type="file"] {
-  padding: 9px 10px;
+  position: absolute;
+  width: 1px;
+  min-height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.file-control {
+  position: relative;
+}
+
+.file-control::after {
+  content: "Vybrat subor";
+  width: max-content;
+  max-width: 100%;
+  min-height: 42px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--control);
+}
+
+:root[lang="en"] .file-control::after {
+  content: "Choose file";
+}
+
+.file-label {
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
 }
 
 input[type="range"] {

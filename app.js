@@ -78,6 +78,7 @@ const dom = {
   canvasFormat: document.querySelector("#canvasFormat"),
   centerIcon: document.querySelector("#centerIcon"),
   logoInput: document.querySelector("#logoInput"),
+  logoFileLabel: document.querySelector("#logoFileLabel"),
   logoSize: document.querySelector("#logoSize"),
   logoSizeValue: document.querySelector("#logoSizeValue"),
   logoOffset: document.querySelector("#logoOffset"),
@@ -183,16 +184,54 @@ const UI_TRANSLATIONS = {
     "Ulozit cloud": "Save cloud",
     "Nacitat cloud": "Load cloud",
     "Historia": "History",
+    "Pripravene": "Ready",
+    "Firebase heslo": "Firebase password",
+    "Vault fraza": "Vault phrase",
+    "Samostatna sifrovacia fraza": "Separate encryption phrase",
+    "Cloud uklada iba zasifrovane projekty. Vault fraza sa neposiela do Firebase.": "Cloud stores encrypted projects only. The vault phrase is never sent to Firebase.",
+    "Moj QR projekt": "My QR project",
     "Typ QR": "QR type",
     "URL adresa": "URL address",
     "Telefon": "Phone",
     "Kontakt vCard": "vCard contact",
+    "PDF URL": "PDF URL",
+    "App Store / Play": "App Store / Play",
+    "Social media": "Social media",
     "Kalendar event": "Calendar event",
     "GPS poloha": "GPS location",
     "Obrazky": "Images",
+    "Predmet": "Subject",
+    "Sprava": "Message",
+    "Sprava z QR": "QR message",
+    "Nazov siete": "Network name",
+    "Moja Wi-Fi": "My Wi-Fi",
+    "Heslo": "Password",
+    "Sifrovanie": "Encryption",
+    "Bez hesla": "No password",
+    "Skryta siet": "Hidden network",
+    "Meno": "First name",
+    "Priezvisko": "Last name",
+    "Firma": "Company",
+    "Web": "Website",
+    "Telefon WhatsApp": "WhatsApp phone",
+    "Predvyplnena WhatsApp sprava": "Prefilled WhatsApp message",
+    "Galeria obrazkov URL": "Image gallery URL",
+    "Video URL": "Video URL",
+    "TikTok / X / dalsi profil": "TikTok / X / another profile",
+    "Nazov": "Name",
+    "Stretnutie": "Meeting",
+    "Koniec": "End",
+    "Miesto": "Location",
+    "Data pre 2D barcode": "2D barcode data",
+    "GS1, produktove alebo logisticke data": "GS1, product, or logistics data",
+    "Raw text": "Raw text",
+    "GS1 text": "GS1 text",
+    "URL payload": "URL payload",
     "Nadpis": "Title",
     "Popis": "Caption",
+    "Naskenujte a pokracujte": "Scan and continue",
     "Horny text": "Top text",
+    "Volitelny horny text": "Optional top text",
     "Podpis / URL": "Footer / URL",
     "Font": "Font",
     "Velkost textov": "Text size",
@@ -200,17 +239,45 @@ const UI_TRANSLATIONS = {
     "Posun textu Y": "Text offset Y",
     "Sablona": "Template",
     "Pattern": "Pattern",
+    "Klasicky": "Classic",
+    "Zaobleny": "Rounded",
+    "Bodky": "Dots",
+    "Diamant": "Diamond",
     "Ocka": "Eyes",
+    "Klasicke": "Classic",
+    "Zaoblene": "Rounded",
+    "Kruhove": "Circular",
     "Rohy karty": "Card corners",
     "Popredie": "Foreground",
     "Pozadie": "Background",
     "Akcent": "Accent",
     "Ram": "Frame",
     "Gradient": "Gradient",
+    "Bez gradientu": "No gradient",
+    "Linear": "Linear",
+    "Radial": "Radial",
+    "Solid": "Solid",
+    "Soft wash": "Soft wash",
+    "Jemna mriezka": "Subtle grid",
+    "Transparentne": "Transparent",
     "Oramovanie": "Frame style",
+    "Bez ramu": "No frame",
+    "Tenka linka": "Thin line",
     "Format": "Format",
+    "Stvorec": "Square",
+    "Vizitka": "Business card",
+    "A4 nahlad": "A4 preview",
     "Obrazok v strede": "Center image",
+    "Vybrat subor": "Choose file",
+    "Nie je vybraty ziadny subor": "No file selected",
+    "Ulozene logo": "Saved logo",
     "Ikona": "Icon",
+    "Bez ikony": "No icon",
+    "Web": "Website",
+    "Mail": "Email",
+    "Kontakt": "Contact",
+    "Mapa": "Map",
+    "Platba": "Payment",
     "Cista zona": "Clear zone",
     "Velkost loga": "Logo size",
     "Biela podlozka pod logom": "White logo plate",
@@ -1606,14 +1673,28 @@ function applyLanguage(language) {
   const forward = UI_TRANSLATIONS.en;
   const reverse = Object.fromEntries(Object.entries(forward).map(([sk, en]) => [en, sk]));
   const map = nextLanguage === "en" ? forward : reverse;
+  const translate = (value) => map[value] || value;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const nodes = [];
   while (walker.nextNode()) nodes.push(walker.currentNode);
   nodes.forEach((node) => {
     const text = node.nodeValue;
     const trimmed = text.trim();
-    if (!trimmed || !map[trimmed]) return;
-    node.nodeValue = text.replace(trimmed, map[trimmed]);
+    if (!trimmed || translate(trimmed) === trimmed) return;
+    node.nodeValue = text.replace(trimmed, translate(trimmed));
+  });
+  document.querySelectorAll("option, button, summary, h1, h2, .badge, .status-pill, .notice").forEach((element) => {
+    const trimmed = element.textContent.trim();
+    if (!trimmed || translate(trimmed) === trimmed) return;
+    element.textContent = element.textContent.replace(trimmed, translate(trimmed));
+  });
+  document.querySelectorAll("input[placeholder], textarea[placeholder]").forEach((element) => {
+    element.placeholder = translate(element.placeholder);
+  });
+  document.querySelectorAll("input[value]").forEach((element) => {
+    if (["labelTitle", "labelCta", "labelCaption", "labelTop", "labelFooter", "projectName"].includes(element.id) && translate(element.value) !== element.value) {
+      element.value = translate(element.value);
+    }
   });
   document.documentElement.lang = nextLanguage;
   if (dom.languageMode) dom.languageMode.value = nextLanguage;
@@ -1653,6 +1734,7 @@ function applyFormState(project) {
     image.onload = () => {
       state.logoImage = image;
       state.logoDataUrl = project.logoDataUrl;
+      if (dom.logoFileLabel) dom.logoFileLabel.textContent = translateText("Ulozene logo", getLanguage());
       setActiveContentFields();
       render();
     };
@@ -1660,6 +1742,7 @@ function applyFormState(project) {
   } else {
     state.logoImage = null;
     state.logoDataUrl = "";
+    if (dom.logoFileLabel) dom.logoFileLabel.textContent = translateText("Nie je vybraty ziadny subor", getLanguage());
   }
   applyTheme(dom.themeMode.value);
   applyLanguage(dom.languageMode.value);
@@ -1988,9 +2071,11 @@ function setupEvents() {
     if (!file) {
       state.logoImage = null;
       state.logoDataUrl = "";
+      if (dom.logoFileLabel) dom.logoFileLabel.textContent = translateText("Nie je vybraty ziadny subor", getLanguage());
       render();
       return;
     }
+    if (dom.logoFileLabel) dom.logoFileLabel.textContent = file.name;
     const reader = new FileReader();
     reader.onload = () => {
       const image = new Image();

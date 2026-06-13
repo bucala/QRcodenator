@@ -4,6 +4,16 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-13 - English Translation Audit
+
+Commit: current translation update
+
+### Changed
+
+- Expanded English translations for select options, placeholders, account controls, design controls, frame controls, and QR content fields.
+- Language switching now translates option labels, buttons, summaries, notices, placeholders, and selected editable label values.
+- Replaced the native file input label with a custom translatable center-image file control.
+
 ## 2026-06-13 - Large QR Color Controls
 
 Commit: current large QR styling update
