@@ -267,7 +267,8 @@ h2 {
 .account-panel .button-grid {
   grid-template-areas:
     "signin signin"
-    "signup signout";
+    "signup signout"
+    "reset reset";
   gap: 10px;
 }
 
@@ -281,6 +282,10 @@ h2 {
 
 #signOut {
   grid-area: signout;
+}
+
+#resetPassword {
+  grid-area: reset;
 }
 
 .panel-title {

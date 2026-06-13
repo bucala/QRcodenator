@@ -112,6 +112,7 @@ The UI no longer exposes a config textarea. The config is packaged in `app.js` t
 <summary><strong>Security Model</strong></summary>
 
 - Firebase password authenticates the account.
+- Account panel can send a Firebase password reset email to the entered account email.
 - A separate Vault phrase derives the local encryption key.
 - The Vault phrase is not stored and is not sent to Firebase.
 - Cloud project payloads are encrypted in the browser with Web Crypto.

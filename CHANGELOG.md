@@ -4,6 +4,17 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-13 - Firebase Password Reset
+
+Commit: current account recovery update
+
+### Added
+
+- Added an `Obnovit heslo` button to the account panel.
+- Added Firebase Auth password reset email flow through `sendPasswordResetEmail`.
+- Added clearer account recovery messages for missing or invalid email addresses.
+- README now documents account password reset support.
+
 ## 2026-06-13 - QR.io Inspired Studio Expansion
 
 Commit: current feature expansion

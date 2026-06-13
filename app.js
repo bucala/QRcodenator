@@ -13,6 +13,7 @@ const dom = {
   signUp: document.querySelector("#signUp"),
   signIn: document.querySelector("#signIn"),
   signOut: document.querySelector("#signOut"),
+  resetPassword: document.querySelector("#resetPassword"),
   contentMode: document.querySelector("#contentMode"),
   text: document.querySelector("#qrText"),
   urlValue: document.querySelector("#urlValue"),
@@ -174,6 +175,10 @@ const UI_TRANSLATIONS = {
     "Ram a logo": "Frame and logo",
     "Export a kontrola": "Export and check",
     "Nazov projektu": "Project name",
+    "Prihlasit": "Sign in",
+    "Registracia": "Sign up",
+    "Odhlasit": "Sign out",
+    "Obnovit heslo": "Reset password",
     "Ulozit lokalne": "Save local",
     "Ulozit cloud": "Save cloud",
     "Nacitat cloud": "Load cloud",
@@ -1511,6 +1516,12 @@ function getFriendlyFirebaseError(error) {
   if (code === "auth/email-already-in-use") {
     return "Tento email uz ma Firebase ucet. Pouzi Prihlasit alebo obnov heslo vo Firebase.";
   }
+  if (code === "auth/missing-email") {
+    return "Zadaj email, na ktory sa ma poslat obnova hesla.";
+  }
+  if (code === "auth/invalid-email") {
+    return "Email nema platny format.";
+  }
   if (code === "auth/weak-password") {
     return "Firebase heslo je prilis slabe. Pouzi aspon 6 znakov; vault fraza musi mat aspon 12 znakov.";
   }
@@ -1826,6 +1837,15 @@ async function signOut() {
   setAccountNotice("Odhlasene. Cloud uklada iba zasifrovane projekty. Vault fraza sa neposiela do Firebase.", "secure");
 }
 
+async function resetPassword() {
+  const email = safeValue(dom.accountEmail);
+  if (!email) throw new Error("Zadaj email, na ktory sa ma poslat obnova hesla.");
+  const fb = await initFirebase();
+  await fb.authMod.sendPasswordResetEmail(fb.auth, email);
+  setStatus("Reset hesla odoslany", "success");
+  setAccountNotice(`Poslali sme email na obnovu hesla pre ${email}. Skontroluj aj spam.`, "secure");
+}
+
 async function saveCloudProject() {
   const fb = await initFirebase();
   const user = fb.auth.currentUser;
@@ -1956,6 +1976,7 @@ function setupEvents() {
   dom.signUp.addEventListener("click", () => guarded(signUp));
   dom.signIn.addEventListener("click", () => guarded(signIn));
   dom.signOut.addEventListener("click", () => guarded(signOut));
+  dom.resetPassword.addEventListener("click", () => guarded(resetPassword));
   dom.saveLocal.addEventListener("click", saveLocalProject);
   dom.saveBrand.addEventListener("click", saveBrandKit);
   dom.saveCloud.addEventListener("click", () => guarded(saveCloudProject));
