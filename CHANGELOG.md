@@ -4,6 +4,18 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-13 - Large QR Color Controls
+
+Commit: current large QR styling update
+
+### Changed
+
+- Large scan-safe QR codes now keep accent-colored finder centers.
+- Scan-safe rendering now keeps selected foreground gradients and colored body modules.
+- SVG export now preserves QR foreground gradients instead of flattening modules to a single color.
+- Readability notes now warn about testing colored/decorative large QR codes without blocking the styling.
+- README now documents gradient support for large scan-safe QR codes.
+
 ## 2026-06-13 - Firebase Password Reset
 
 Commit: current account recovery update

@@ -35,7 +35,7 @@ Apple-style QR studio for classic and visual QR codes with templates, frames, la
 - Frames: none, thin line, soft shadow, glass, ticket, badge, scan bar, label, and poster.
 - Frame color picker independent from foreground, background, and accent colors.
 - Background styles: solid, soft wash, subtle grid, and transparent.
-- Gradients: none, linear, and radial.
+- Gradients: none, linear, and radial, including large QR codes when scan-safe mode is enabled.
 - Theme switch: light and dark interface modes.
 - Language switch: Slovak and English UI labels.
 - Font styles: neutral, elegant, bold, and mono.

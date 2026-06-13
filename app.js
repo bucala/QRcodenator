@@ -937,8 +937,8 @@ function getReadability(options, qr = null) {
   if (options.scanSafe && qr && qr.version >= 7 && options.logoSize > effective.logoSize) {
     notes.push("Pri velkom QR scan-safe zmensi logo, aby bol kod citatelny.");
   }
-  if (options.scanSafe && (options.pattern === "diamond" || options.pattern === "dots")) {
-    notes.push("Dekorativny pattern je povoleny, no po exporte ho otestujte skenerom.");
+  if (options.scanSafe && (options.pattern === "diamond" || options.pattern === "dots" || options.gradient !== "none")) {
+    notes.push("Farebne a dekorativne prvky su povolene aj pre velky QR, no po exporte ich otestujte skenerom.");
   }
   if (!options.scanSafe && (Math.abs(options.logoOffsetX) > 8 || Math.abs(options.logoOffset) > 8)) {
     score -= 18;
@@ -959,8 +959,6 @@ function getReadability(options, qr = null) {
   if (!options.scanSafe && options.gradient !== "none") {
     score -= 6;
     notes.push("Gradient moze znizit citatelnost pri tlaci.");
-  } else if (options.scanSafe && options.gradient !== "none") {
-    notes.push("Scan-safe render pouzije solidnu farbu QR modulov.");
   }
   if (!options.scanSafe && (options.pattern === "diamond" || options.pattern === "dots")) {
     score -= 5;
@@ -1277,9 +1275,9 @@ function drawQrToCanvas(canvas, qr, options) {
   canvas.classList.toggle("pixel-preview", options.scanSafe);
 
   const colors = {
-    foreground: options.scanSafe ? options.foreground : makeForegroundStyle(ctx, options, 0, 0, metrics.qr),
+    foreground: makeForegroundStyle(ctx, options, 0, 0, metrics.qr),
     background: options.background,
-    accent: options.scanSafe && qr.version >= 7 ? options.foreground : options.accent,
+    accent: options.accent,
   };
 
   fillBackground(ctx, canvas.width, canvas.height, options);
@@ -1394,8 +1392,11 @@ function generateSvg(qr, options) {
   const height = options.exportSize + labelHeight;
   const parts = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${options.exportSize}" height="${height}" viewBox="0 0 ${options.exportSize} ${height}">`,
+    options.gradient === "linear" ? `<defs><linearGradient id="qrForeground" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${options.foreground}"/><stop offset="100%" stop-color="${options.accent}"/></linearGradient></defs>` : "",
+    options.gradient === "radial" ? `<defs><radialGradient id="qrForeground" cx="50%" cy="50%" r="70%"><stop offset="0%" stop-color="${options.accent}"/><stop offset="100%" stop-color="${options.foreground}"/></radialGradient></defs>` : "",
     `<rect width="100%" height="100%" fill="${options.background}"/>`,
   ];
+  const moduleFill = options.gradient === "none" ? options.foreground : "url(#qrForeground)";
   const offset = effective.quietZone * cell;
   const safeOffset = offset;
   const r = effective.pattern === "rounded" || effective.pattern === "weave" ? cell * 0.2 : 0;
@@ -1417,19 +1418,19 @@ function generateSvg(qr, options) {
       const py = safeOffset + y * cell;
       if (isInLogoClearArea(px, py, cell, svgLogoArea)) continue;
       if (effective.pattern === "dots") {
-        parts.push(`<circle cx="${px + cell / 2}" cy="${py + cell / 2}" r="${cell * 0.38}" fill="${options.foreground}"/>`);
+        parts.push(`<circle cx="${px + cell / 2}" cy="${py + cell / 2}" r="${cell * 0.38}" fill="${moduleFill}"/>`);
       } else if (effective.pattern === "diamond") {
-        parts.push(`<rect x="${px + cell * 0.18}" y="${py + cell * 0.18}" width="${cell * 0.64}" height="${cell * 0.64}" rx="${cell * 0.08}" fill="${options.foreground}" transform="rotate(45 ${px + cell / 2} ${py + cell / 2})"/>`);
+        parts.push(`<rect x="${px + cell * 0.18}" y="${py + cell * 0.18}" width="${cell * 0.64}" height="${cell * 0.64}" rx="${cell * 0.08}" fill="${moduleFill}" transform="rotate(45 ${px + cell / 2} ${py + cell / 2})"/>`);
       } else if (effective.pattern === "square") {
-        parts.push(`<rect x="${px}" y="${py}" width="${cell}" height="${cell}" fill="${options.foreground}"/>`);
+        parts.push(`<rect x="${px}" y="${py}" width="${cell}" height="${cell}" fill="${moduleFill}"/>`);
       } else {
-        parts.push(`<rect x="${px + cell * 0.08}" y="${py + cell * 0.08}" width="${cell * 0.84}" height="${cell * 0.84}" rx="${r}" fill="${options.foreground}"/>`);
+        parts.push(`<rect x="${px + cell * 0.08}" y="${py + cell * 0.08}" width="${cell * 0.84}" height="${cell * 0.84}" rx="${r}" fill="${moduleFill}"/>`);
       }
     }
   }
 
   const eye = (x, y) => {
-    const eyeAccent = options.scanSafe && qr.version >= 7 ? options.foreground : options.accent;
+    const eyeAccent = options.accent;
     parts.push(`<rect x="${x}" y="${y}" width="${cell * 7}" height="${cell * 7}" rx="${effective.eyeStyle === "rounded" ? cell * 1.35 : 0}" fill="${options.foreground}"/>`);
     parts.push(`<rect x="${x + cell}" y="${y + cell}" width="${cell * 5}" height="${cell * 5}" rx="${effective.eyeStyle === "rounded" ? cell * 0.9 : 0}" fill="${options.background}"/>`);
     parts.push(`<rect x="${x + cell * 2}" y="${y + cell * 2}" width="${cell * 3}" height="${cell * 3}" rx="${effective.eyeStyle === "rounded" ? cell * 0.62 : 0}" fill="${eyeAccent}"/>`);
