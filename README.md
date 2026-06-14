@@ -2,7 +2,7 @@
 
 # QRcodenator
 
-### Apple-style QR kód štúdio
+### Simple-style QR kód štúdio
 **Statická webová aplikácia · Firebase Cloud · Šifrovaný Vault · Dynamické QR**
 
 ---
