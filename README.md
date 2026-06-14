@@ -1,146 +1,359 @@
+<div align="center">
+
 # QRcodenator
 
-Apple-style QR studio for classic and visual QR codes with templates, frames, labels, logos, exports, local history, and an encrypted Firebase account vault.
+### Apple-style QR kód štúdio
+**Statická webová aplikácia · Firebase Cloud · Šifrovaný Vault · Dynamické QR**
 
-[Open app](./index.html) · [Changelog](./CHANGELOG.md) · [Firestore rules](./firestore.rules)
+---
 
-## Quick Start
+[![CI](https://github.com/bucala/QRcodenator/actions/workflows/ci.yml/badge.svg)](https://github.com/bucala/QRcodenator/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-2.0.0-orange)](#changelog)
+[![Vanilla JS](https://img.shields.io/badge/Vanilla-JS-yellow?logo=javascript)](app.js)
+[![No Framework](https://img.shields.io/badge/No%20Framework-zero%20build-lightgrey)](#)
+[![Firebase](https://img.shields.io/badge/Firebase-optional-yellow?logo=firebase)](firebase-config.json)
 
-1. Open `index.html` in a modern browser.
-2. Choose the QR content type in **Obsah**.
-3. Tune visuals in **Texty**, **Vzhlad**, and **Ram a logo**.
-4. Export as PNG, JPG, SVG, or PDF.
-5. Optional: connect Firebase for encrypted cloud save/load.
+---
 
-> Keep this rule for every future change: update `CHANGELOG.md` in the same commit.
+[🚀 Rýchly štart](#-rýchly-štart) ·
+[✨ Funkcie](#-funkcie) ·
+[🎨 Dizajn a export](#-dizajn-a-export) ·
+[🔒 Zabezpečenie](#-zabezpečenie) ·
+[☁️ Firebase Vault](#-firebase-vault) ·
+[📂 Súbory projektu](#-súbory-projektu) ·
+[📋 Changelog](CHANGELOG.md)
 
-## Interactive Guide
+</div>
+
+---
+
+## 💡 Prečo QRcodenator?
+
+- **Zero-dependency QR engine** — pinovaný `qrcode-generator@1.4.4` s SRI, vstavaný enkodér ako offline fallback
+- **Bez frameworku** — čistý vanilla JS, žiadny build step, žiadny bundler, funguje ako statická stránka
+- **Apple-style studio** — kolapsovateľné panely, dark/light mode, SK/EN jazyk, live preview
+- **18 typov obsahu** — URL, vCard, Wi-Fi, WhatsApp, PDF, video, sociálne profily, GPS, kalendár a ďalšie
+- **Dizajnový toolkit** — 6 šablón, 9 rámov, 7 vzorcov modulov, gradienty, logá, fonty, farby
+- **Šifrovaný cloud vault** — AES-GCM + PBKDF2, heslo nikdy neopustí prehliadač
+- **Dynamické QR** — slug → Firestore redirect s počítadlom skenov
+- **Scan-safe rendering** — pixel-aligned canvas, force-square moduly pre mobilné skenery
+
+---
+
+## 🚀 Rýchly štart
+
+```bash
+git clone https://github.com/bucala/QRcodenator.git
+cd QRcodenator
+```
+
+| Krok | Akcia | Popis |
+|:-----|:------|:------|
+| 1 | Otvor `index.html` | Funguje priamo v prehliadači, žiadny server nie je potrebný |
+| 2 | Vyber typ obsahu v **Obsah** | URL, text, vCard, Wi-Fi, WhatsApp, GPS a ďalšie |
+| 3 | Nastav texty v **Texty** | CTA, titulok, popis, hornú/dolnú etiketu |
+| 4 | Uprav vzhľad v **Vzhlad** | Šablóna, vzorec modulov, farby, gradienty, pozadie |
+| 5 | Nastav rám a logo v **Ram a logo** | Štýl rámu, upload loga, centrum ikona, clearance |
+| 6 | Exportuj v **Export** | PNG, JPG, SVG, PDF, Clipboard, bundle ZIP |
+
+> **Pravidlo projektu:** Každá zmena kódu, UI alebo dokumentácie musí aktualizovať `CHANGELOG.md` v tom istom commite.
+
+---
+
+## ✨ Funkcie
+
+### 📱 Typy QR obsahu
 
 <details open>
-<summary><strong>Core QR Studio</strong></summary>
+<summary><strong>18 podporovaných typov obsahu</strong></summary>
 
-- Content modes: URL, text, email, phone, SMS, Wi-Fi, vCard, WhatsApp, PDF, app link, image gallery, video, social profiles, calendar event, GPS location, and 2D barcode text.
-- Live QR rendering with selectable correction level and quiet zone.
-- QR matrix generation uses the pinned `qrcode-generator@1.4.4` browser library with SRI, with the built-in encoder kept as an offline fallback.
-- Pattern styles: classic, rounded, dots, diamond, and soft grid.
-- Advanced pattern styles include mosaic and connected modules.
-- Finder eye styles: classic, rounded, and circular.
-- Readability score with warnings for contrast, logo size, quiet zone, and decorative choices.
+| Typ | Payload | Popis |
+|:----|:--------|:------|
+| 🔗 **URL** | `https://...` | Odkaz na webovú stránku |
+| 📝 **Text** | Voľný text | Obyčajný textový obsah |
+| 📧 **Email** | `mailto:` | Adresa, predmet, telo správy |
+| 📞 **Telefón** | `tel:` | Číslo na volanie alebo SMS |
+| 💬 **SMS** | `sms:` | Číslo a text správy |
+| 📶 **Wi-Fi** | `WIFI:` | SSID, heslo, šifrovanie |
+| 👤 **vCard** | `BEGIN:VCARD` | Kontaktná karta |
+| 💚 **WhatsApp** | `wa.me/` | Číslo a predvyplnená správa |
+| 📄 **PDF** | URL odkaz | Priame stiahnutie alebo náhľad PDF |
+| 📱 **App link** | Obchody | iOS App Store / Google Play |
+| 🖼️ **Image gallery** | URL odkaz | Odkaz na galériu obrázkov |
+| 🎬 **Video** | URL odkaz | YouTube, Vimeo alebo priame video URL |
+| 📲 **Social profiles** | Profil URL | Instagram, Twitter/X, Facebook, TikTok |
+| 📅 **Kalendár** | `BEGIN:VEVENT` | Udalosť s dátumom a miestom |
+| 📍 **GPS** | `geo:` | Zemepisné súradnice |
+| 🏷️ **2D barcode** | Voľný text | Vlastný textový obsah pre 2D čítačky |
+| 📊 **Dynamický QR** | `redirect.html?id=slug` | Presmerovaný slug s editovateľným cieľom |
+| 🔁 **Dynamic redirect** | Firestore doc | Živý URL meniteľný bez tlače nového QR |
 
 </details>
+
+### 🎨 Vzorce a štýly modulov
 
 <details>
-<summary><strong>Design Controls</strong></summary>
+<summary><strong>Vizuálne vzorce a finder oči</strong></summary>
 
-- Templates: Apple Minimal, Event Pass, Restaurant Menu, Business Card, Wi-Fi Card, and Product Tag.
-- Frames: none, thin line, soft shadow, glass, ticket, badge, scan bar, label, and poster.
-- Frame color picker independent from foreground, background, and accent colors.
-- Background styles: solid, soft wash, subtle grid, and transparent.
-- Gradients: none, linear, and radial, including large QR codes when scan-safe mode is enabled.
-- Theme switch: light and dark interface modes.
-- Language switch: Slovak and English UI labels, including select choices and form placeholders.
-- Font styles: neutral, elegant, bold, and mono.
-- Text controls: CTA, title, caption, top label, footer, text size, and X/Y text offset.
+**Body patterns:**
+- `classic` — plné štvorce (maximálna čitateľnosť)
+- `rounded` — zaoblené rohy modulov
+- `dots` — guľaté bodky
+- `diamond` — štvorcové diamanty pod uhlom
+- `soft grid` — mäkký grid s okrajmi
+- `mosaic` — mozaikový vzorec z farebných blokov
+- `connected` — prepojené moduly s oceľovými hranami
+
+**Finder eye styles:**
+- `classic` — štandardné štvorcové oči
+- `rounded` — zaoblené finder oči
+- `circular` — kruhové finder oči
+
+**Opravná úroveň:** L (7%), M (15%), Q (25%), H (30%)
+**Quiet zone:** 0–8 modulov, nastaviteľná
 
 </details>
+
+### 🖼️ Šablóny a rámy
 
 <details>
-<summary><strong>Logo And Center Icon</strong></summary>
+<summary><strong>Prednastavené šablóny a rámové štýly</strong></summary>
 
-- Upload a center image or use a built-in icon.
-- Logo size control.
-- Horizontal and vertical logo offset.
-- Clean integration zone so QR modules are skipped under the logo area.
-- Adjustable logo clearance.
-- Optional white logo plate.
+**Šablóny (6):**
+- `Apple Minimal` — čisté biele pozadie, minimalistický serif text
+- `Event Pass` — tmavé pozadie, výrazný tučný text udalosti
+- `Restaurant Menu` — teplé odtiene, okrúhla forma, pozvánkový štýl
+- `Business Card` — profesionálny modrý rám, kompaktné rozmiestnenie
+- `Wi-Fi Card` — ikon Wi-Fi, priateľské pastelové farby
+- `Product Tag` — produktová etiketa so sloganom
+
+**Rámy (9):**
+- `none` — bez rámu
+- `thin line` — tenká čiara
+- `soft shadow` — jemný tieň
+- `glass` — sklenený efekt
+- `ticket` — lístkový rám s trhaným okrajom
+- `badge` — odznak s tučným popisom
+- `scan bar` — horizontálny scan pruh s textom
+- `label` — etiketa s horným a dolným textom
+- `poster` — posterový formát s veľkým CTA
+
+**Pozadia (4):** solid, soft wash, subtle grid, transparent
 
 </details>
+
+### 🔤 Textové a fontové ovládanie
 
 <details>
-<summary><strong>Exports</strong></summary>
+<summary><strong>Typografia a textové vrstvy</strong></summary>
 
-- PNG export.
-- JPG export.
-- SVG export.
-- PDF through print/save dialog.
-- Copy PNG to clipboard.
-- Copy SVG markup to clipboard.
-- Scan test mode opens a clean black-on-white QR for phone camera validation.
-- Export bundle downloads the current project JSON, SVG, and PNG together.
+**Textové vrstvy:**
+- `CTA` — výzva na akciu (hlavný text na QR)
+- `Titulok` — nadpis pod QR
+- `Popis` — sekundárny deskriptívny text
+- `Horná etiketa` — malý text nad QR
+- `Dolná etiketa (footer)` — text v pätičke rámu
+
+**Fontové štýly (4):**
+- `neutral` — čistý sans-serif systémový font
+- `elegant` — serif font (Georgia)
+- `bold` — tučný grotesk
+- `mono` — fixná šírka (monospace)
+
+**Ovládanie polohy:** posun textu X / Y, veľkosť textu (slider)
 
 </details>
+
+---
+
+## 🎨 Dizajn a export
+
+### 🖼️ Logo a centrum ikona
 
 <details>
-<summary><strong>Projects, History, And Brand Kit</strong></summary>
+<summary><strong>Logo upload a centrum ikona</strong></summary>
 
-- Local project save/load in the browser.
-- Recent history list.
-- Duplicate the active project into local storage.
-- Brand kit profiles with colors, pattern, frame style, font style, and logo.
-- Encrypted vault export/import for portable backups.
-- Cloud save/load through Firebase after sign-in and vault setup.
+- Upload vlastného centra obrázku (PNG, SVG, JPG)
+- Vstavaná knižnica ikon pre typy obsahu (WhatsApp, PDF, App, Video, Social, 2D)
+- Ovládanie veľkosti loga (%)
+- Horizontálny a vertikálny posun loga
+- **Clean integration zone** — QR moduly sú vynechané pod logom bez ručného nastavovania
+- Nastaviteľný logo clearance (priestor okolo loga)
+- Voliteľný biely podklad pod logom (logo plate)
 
 </details>
+
+### 📤 Exportné formáty
 
 <details>
-<summary><strong>Dynamic QR And Scan Analytics</strong></summary>
+<summary><strong>Všetky exportné možnosti</strong></summary>
 
-- Dynamic QR stores a slug and target URL in Firestore.
-- The visible QR can point to `redirect.html?id=slug`, so the target can change later without regenerating the printed QR.
-- The redirect page increments a scan counter before forwarding visitors.
-- Firestore rules allow public reads for active redirect documents and public writes only for incrementing `scanCount` by one.
+| Formát | Popis | Poznámka |
+|:-------|:------|:---------|
+| **PNG** | Rastrový export | Plné rozlíšenie s antialiasinguom |
+| **JPG** | JPEG export | Nastaviteľná kvalita |
+| **SVG** | Vektorový export | Skalovateľný, zachováva gradienty |
+| **PDF** | Tlač/uložiť | Cez natívny print dialog |
+| **Clipboard PNG** | Skopírovať do schránky | Priamy paste do iných aplikácií |
+| **Clipboard SVG** | Skopírovať SVG markup | Pre vektorové editory |
+| **Scan test** | Čistý BW render | Pre overenie čitateľnosti mobilným fotoaparátom |
+| **Export bundle** | ZIP so všetkým | Projekt JSON + SVG + PNG spolu |
 
 </details>
+
+### 📊 Readability score
+
+QRcodenator počíta skóre čitateľnosti na základe viacerých faktorov a zobrazuje varovania pre:
+- Nízky kontrast medzi farbou popredia a pozadia
+- Príliš veľké logo (prekrytie kritických modulov)
+- Príliš malá quiet zone
+- Dekoratívne vzorce pri hustých QR kódoch
+- Riziká pri gradientovom farbení s malou opravnou úrovňou
+
+---
+
+## 📁 Projekty a história
 
 <details>
-<summary><strong>Firebase Account Vault</strong></summary>
+<summary><strong>Lokálne projekty, história a brand kit</strong></summary>
 
-The app is static and uses Firebase from the browser.
+**Lokálne projekty:**
+- Uložiť / načítať projekt v prehliadači (localStorage)
+- Zoznam poslednej histórie projektov
+- Duplikovať aktívny projekt do lokálneho úložiska
 
-1. Create a Firebase project and register a Web app.
-2. Enable Authentication with Email/Password.
-3. Enable Cloud Firestore.
-4. Publish the included `firestore.rules`.
-5. Firebase web config is packaged in the static app, so the UI no longer asks for manual API config.
+**Brand kit profily:**
+- Pomenované profily s farbami, vzorom, štýlom rámu, fontom a logom
+- Klikateľný zoznam brand profilov pre rýchle prepnutie
+- Skratky pre galériu rámov a logoprints
 
-Ak Account Vault zobrazí `auth/configuration-not-found`, Firebase config je načítaný, ale v projekte ešte nie je zapnutý Auth backend. Otvor Firebase Console pre projekt `qrcodenator`, choď do **Authentication > Sign-in method**, povoľ **Email/Password**, ulož zmenu a potom v aplikácii použi **Registrácia** alebo **Prihlásiť** znova.
-
-The UI no longer exposes a config textarea. The config is packaged in `app.js` and `redirect.html` to keep the Account Vault workflow simple. Firebase web config values are public identifiers; project data security still depends on Auth, Firestore rules, and client-side vault encryption.
+**Vault export/import:**
+- Šifrovaný export celej knižnice projektov do súboru
+- Import šifrovaného vault súboru
+- Prenosné zálohy pre migráciu medzi zariadeniami
 
 </details>
+
+---
+
+## 🔒 Zabezpečenie
 
 <details>
-<summary><strong>Security Model</strong></summary>
+<summary><strong>Bezpečnostný model a šifrovanie</strong></summary>
 
-- Firebase password authenticates the account.
-- Account panel can send a Firebase password reset email to the entered account email.
-- Account panel can send Firebase email verification and update the signed-in password.
-- A separate Vault phrase derives the local encryption key.
-- Vault phrase strength is scored locally before encrypted cloud or vault export operations.
-- The Vault phrase is not stored and is not sent to Firebase.
-- Cloud project payloads are encrypted in the browser with Web Crypto.
-- Key derivation: PBKDF2-SHA-256.
-- Encryption: AES-GCM.
-- Firestore rules restrict project access to `users/{uid}/projects/{projectId}` for the matching signed-in user.
-- Dynamic QR documents are public only for active redirect lookup and scan count incrementing.
+**Autentizácia a účet:**
+- Firebase Email/Password autentizácia
+- Obnovenie hesla cez Firebase email link
+- Email verifikácia účtu
+- Zmena hesla pre prihláseného používateľa
+
+**Šifrovanie vault dát:**
+- Vault fráza sa **nikdy neuloží** a nikdy sa neodošle na Firebase
+- Sila vault frázy sa skóruje lokálne pred každou šifrovanou operáciou
+- **Key derivation:** PBKDF2-SHA-256
+- **Encryption:** AES-GCM (Web Crypto API)
+
+**Firestore prístup:**
+- Projekty uložené v `users/{uid}/projects/{projectId}` — prístupné len vlastníkovi
+- Dynamické QR presmerovaná dokumenty — verejné čítanie len pre aktívne slug dokumenty
+- Verejné zápisy obmedzené len na inkrementáciu `scanCount` o 1
+
+**Firebase config:**
+- Firebase web config (API key, projectId…) sú **verejné identifikátory** — nie tajomstvá
+- Bezpečnosť závisí od Auth pravidiel, Firestore rules a vault šifrovania na klientovi
+- Config je zabalený priamo do `app.js` a `redirect.html` — žiadne manuálne kopírovanie
 
 </details>
 
-## Project Files
+---
 
-| File | Purpose |
-| --- | --- |
-| `index.html` | App UI and controls |
-| `redirect.html` | Dynamic QR redirect and scan counter |
-| `styles.css` | Apple-style responsive interface |
-| `app.js` | QR generation, rendering, exports, local storage, Firebase vault |
-| `firebase-config.json` | Firebase web config reference used by the embedded app config |
-| `firestore.rules` | Firestore security rules |
-| `CHANGELOG.md` | Complete project history |
+## ☁️ Firebase Vault
 
-## Development Notes
+<details>
+<summary><strong>Nastavenie Firebase projektu</strong></summary>
 
-- This project is intentionally framework-free and can run as a static web page.
-- Do not commit personal Firebase credentials beyond the public web app config.
-- When adding a feature, update this README if behavior changes.
-- When making any change, update `CHANGELOG.md` in the same commit.
+### Rýchle nastavenie Firebase
+
+1. Otvor [Firebase Console](https://console.firebase.google.com/) a vytvor nový projekt
+2. Registruj **Web app** v nastaveniach projektu
+3. V **Authentication → Sign-in method** povoľ **Email/Password**
+4. V **Firestore Database** vytvor databázu (Production mode)
+5. Skopíruj a publikuj `firestore.rules` z tohto repozitára
+6. Firebase config je zabalený priamo v `app.js` — žiadna ďalšia konfigurácia nie je potrebná
+
+### Riešenie problémov
+
+| Chyba | Príčina | Riešenie |
+|:------|:--------|:---------|
+| `auth/configuration-not-found` | Auth backend nie je zapnutý | Firebase Console → Authentication → Sign-in method → Email/Password → Povoliť → Uložiť |
+| `permission-denied` | Firestore rules nie sú publikované | Publikuj `firestore.rules` cez Firebase CLI alebo konzolu |
+| `auth/network-request-failed` | Offline alebo CORS | Skontroluj sieťové pripojenie a autorizované domény |
+
+> **Tip:** Ak Account Vault zobrazí `auth/configuration-not-found`, Firebase config je načítaný, ale Auth backend ešte nie je aktivovaný. Stačí ho povoliť v konzole.
+
+</details>
+
+---
+
+## 📡 Dynamické QR a scan analytika
+
+<details>
+<summary><strong>Dynamické presmerovanie a počítanie skenov</strong></summary>
+
+**Princíp fungovania:**
+1. QR kód ukazuje na `redirect.html?id=SLUG` — nie priamo na cieľovú URL
+2. `redirect.html` načíta slug z Firestore, inkrementuje `scanCount`, a presmeruje návštevníka
+3. Cieľovú URL môžeš zmeniť v aplikácii bez toho, aby si musel tlačiť nový QR kód
+
+**Výhody dynamického QR:**
+- Cieľ môžeš meniť kedykoľvek
+- Každý sken sa zaráta (live počítadlo)
+- Ideálne pre tlačené materiály (vizitky, letáky, plagáty)
+
+**Bezpečnostné limity:**
+- Verejné čítanie len pre aktívne slug dokumenty
+- Zápis len pre inkrementáciu `scanCount` — žiadne iné pole nie je zapisovateľné verejne
+
+</details>
+
+---
+
+## 📂 Súbory projektu
+
+| Súbor | Účel |
+|:------|:-----|
+| `index.html` | Hlavné UI, všetky ovládacie panely a canvas |
+| `redirect.html` | Dynamický QR redirect a počítadlo skenov |
+| `styles.css` | Apple-style responzívny dizajn, dark/light mode |
+| `app.js` | QR engine, rendering, exporty, localStorage, Firebase vault |
+| `firebase-config.json` | Firebase web config referencia (zabalená v app.js) |
+| `firestore.rules` | Firestore bezpečnostné pravidlá |
+| `CHANGELOG.md` | Kompletná história projektu |
+
+---
+
+## 🛠️ Development Notes
+
+- Projekt je zámerné **framework-free** a beží ako statická web stránka
+- Necommituj osobné Firebase credentials (API key v `app.js` je verejný identifikátor)
+- Pri pridaní funkcie aktualizuj tento README ak sa mení správanie aplikácie
+- Pri každej zmene aktualizuj `CHANGELOG.md` v rovnakom commite
+
+---
+
+## ⚖️ Legal
+
+QRcodenator je nástroj na generovanie QR kódov pre obsah zadaný používateľom. Aplikácia neukladá a nezdieľa obsah QR kódov bez explicitného pokynu používateľa (cloud uloženie cez vlastný Firebase účet).
+
+Firebase cloud funkcionalita je voliteľná a závisí od používateľovho vlastného Firebase projektu — dáta sú šifrované klientom pred odoslaním.
+
+---
+
+<div align="center">
+
+**[⬆ Späť nahor](#qrcodenator)**
+
+MIT License · © 2026 [bucala](https://github.com/bucala)
+
+</div>
