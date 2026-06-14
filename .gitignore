@@ -1,0 +1,6 @@
+config.js
+firebase-config.json
+firebase-config.local.json
+.env
+.env.local
+.env.*.local

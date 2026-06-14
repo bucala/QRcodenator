@@ -136,8 +136,10 @@ const state = {
   lastOptions: null,
   currentUser: null,
   firebase: null,
+  firebaseConfig: null,
   vaultSalt: null,
   suppressRawSync: false,
+  renderTimer: null,
 };
 
 const TOTAL_CODEWORDS = [0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346];
@@ -184,9 +186,9 @@ const FIREBASE_IMPORTS = {
   auth: `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-auth.js`,
   firestore: `https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`,
 };
-const FIREBASE_CONFIG_SEAL = "ClACHw0uCxhWVVBsPxsUPw1uP14eKikJVx8IWU05Rlw9OAUVWW4GERg3JwtVOj4vPipQAVQAABgcaRoEEBsNTV5HHxMXABZIGAABAwYDEwADFwEOFwAPEQRBEUIbQ1lOBF8aAxQRFyYAR1RDBR0RQhIEGw0AQgdLXVAQGwsXDwYRLQdOHQQBTk4PBBsSHQcKCgQaDgZBFEQEBBcNB0gGHR4AAggBSw8RBE1eDxsEBh8VShwHFiEGAQAAHCgQTUgPRFZCX0QYQl5AQ1ddRklMAAQfO0lUW1ddTh9CXkJCVlhTVF9VRlUFSBRbEV8SS0dcQBQBVwEEDVVADEEaEAVFW1YBVwQUExAaFgADBBobO0lUW1crWRxAP0kgKVw8Jz9DCQ==";
-const FIREBASE_CONFIG_SEAL_KEY = "qrcodenator-vault-ui";
-const FIREBASE_PROJECT_ID = "qrcodenator";
+const FIREBASE_PROJECT_ID = "Firebase";
+const MAX_LOGO_FILE_SIZE = 350 * 1024;
+const MAX_PROJECT_JSON_SIZE = 850 * 1024;
 const UI_TRANSLATIONS = {
   en: {
     "Bezpecne QR studio": "Secure QR studio",
@@ -1679,6 +1681,22 @@ function render() {
   }
 }
 
+function scheduleRender() {
+  window.clearTimeout(state.renderTimer);
+  state.renderTimer = window.setTimeout(render, 90);
+}
+
+function getJsonByteSize(value) {
+  return encoder.encode(JSON.stringify(value)).length;
+}
+
+function assertProjectSize(project) {
+  const bytes = getJsonByteSize(project);
+  if (bytes > MAX_PROJECT_JSON_SIZE) {
+    throw new Error(`Projekt je prilis velky (${Math.round(bytes / 1024)} KB). Zmensite logo alebo pouzite mensi obrazok.`);
+  }
+}
+
 function download(name, url) {
   const link = document.createElement("a");
   link.download = name;
@@ -1811,18 +1829,24 @@ function applyFormState(project) {
 function saveHistory() {
   const history = readJson(STORAGE_KEYS.history, []);
   const snapshot = collectFormState();
+  assertProjectSize(snapshot);
   const next = [snapshot, ...history.filter((item) => item.text !== snapshot.fields.qrText)].slice(0, 10);
   writeJson(STORAGE_KEYS.history, next);
   renderLists();
 }
 
 function saveLocalProject() {
-  const projects = readJson(STORAGE_KEYS.projects, []);
-  const snapshot = collectFormState();
-  const next = [snapshot, ...projects].slice(0, 30);
-  writeJson(STORAGE_KEYS.projects, next);
-  renderLists();
-  setStatus("Projekt ulozeny lokalne", "success");
+  try {
+    const projects = readJson(STORAGE_KEYS.projects, []);
+    const snapshot = collectFormState();
+    assertProjectSize(snapshot);
+    const next = [snapshot, ...projects].slice(0, 30);
+    writeJson(STORAGE_KEYS.projects, next);
+    renderLists();
+    setStatus("Projekt ulozeny lokalne", "success");
+  } catch (error) {
+    setStatus(error.message || "Projekt sa nepodarilo ulozit", "error");
+  }
 }
 
 function saveBrandKit() {
@@ -1895,18 +1919,25 @@ function renderBrandProfiles() {
 }
 
 function duplicateCurrentProject() {
-  const projects = readJson(STORAGE_KEYS.projects, []);
-  const snapshot = collectFormState();
-  snapshot.id = crypto.randomUUID();
-  snapshot.name = `${snapshot.name || "QR projekt"} copy`;
-  snapshot.createdAt = new Date().toISOString();
-  writeJson(STORAGE_KEYS.projects, [snapshot, ...projects].slice(0, 30));
-  renderLists();
-  setStatus("Projekt duplikovany", "success");
+  try {
+    const projects = readJson(STORAGE_KEYS.projects, []);
+    const snapshot = collectFormState();
+    assertProjectSize(snapshot);
+    snapshot.id = crypto.randomUUID();
+    snapshot.name = `${snapshot.name || "QR projekt"} copy`;
+    snapshot.createdAt = new Date().toISOString();
+    writeJson(STORAGE_KEYS.projects, [snapshot, ...projects].slice(0, 30));
+    renderLists();
+    setStatus("Projekt duplikovany", "success");
+  } catch (error) {
+    setStatus(error.message || "Projekt sa nepodarilo duplikovat", "error");
+  }
 }
 
 async function exportEncryptedVault() {
-  const encrypted = await encryptProject(collectFormState());
+  const project = collectFormState();
+  assertProjectSize(project);
+  const encrypted = await encryptProject(project);
   downloadBlob(`qrcodenator-vault-${getFileStamp()}.json`, JSON.stringify(encrypted, null, 2));
   setStatus("Vault exportovany", "success");
 }
@@ -1923,6 +1954,7 @@ function exportProjectBundle() {
   const options = getOptions();
   const qr = state.lastQr || generateQr(options.text, options.ecl);
   const project = collectFormState();
+  assertProjectSize(project);
   downloadBlob(`qrcodenator-project-${getFileStamp()}.json`, JSON.stringify(project, null, 2));
   downloadBlob(`qrcodenator-${getFileStamp()}.svg`, generateSvg(qr, options), "image/svg+xml");
   download(`qrcodenator-${getFileStamp()}.png`, dom.canvas.toDataURL("image/png"));
@@ -1954,12 +1986,25 @@ function base64ToBytes(value) {
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
-function openEmbeddedFirebaseConfig() {
-  const bytes = base64ToBytes(FIREBASE_CONFIG_SEAL);
-  const text = Array.from(bytes, (byte, index) => (
-    String.fromCharCode(byte ^ FIREBASE_CONFIG_SEAL_KEY.charCodeAt(index % FIREBASE_CONFIG_SEAL_KEY.length))
-  )).join("");
-  return JSON.parse(text);
+async function loadFirebaseConfig() {
+  if (state.firebaseConfig) return state.firebaseConfig;
+  if (window.QRCODENATOR_FIREBASE_CONFIG && window.QRCODENATOR_FIREBASE_CONFIG.apiKey) {
+    state.firebaseConfig = window.QRCODENATOR_FIREBASE_CONFIG;
+    return state.firebaseConfig;
+  }
+  try {
+    const response = await fetch("firebase-config.local.json", { cache: "no-store" });
+    if (response.ok) {
+      const config = await response.json();
+      if (config && config.apiKey) {
+        state.firebaseConfig = config;
+        return state.firebaseConfig;
+      }
+    }
+  } catch {
+    // Optional local config is absent in production unless the deploy target provides it.
+  }
+  throw new Error("Firebase config chyba. Vytvorte ignorovany config.js alebo firebase-config.local.json podla prikladu v README.");
 }
 
 function getOrCreateVaultSalt() {
@@ -2011,7 +2056,7 @@ async function decryptProject(record) {
 
 async function initFirebase() {
   if (state.firebase) return state.firebase;
-  const config = openEmbeddedFirebaseConfig();
+  const config = await loadFirebaseConfig();
   const [{ initializeApp }, authMod, firestoreMod] = await Promise.all([
     import(FIREBASE_IMPORTS.app),
     import(FIREBASE_IMPORTS.auth),
@@ -2107,7 +2152,9 @@ async function saveCloudProject() {
   const fb = await initFirebase();
   const user = fb.auth.currentUser;
   if (!user) throw new Error("Najprv sa prihlaste.");
-  const encrypted = await encryptProject(collectFormState());
+  const project = collectFormState();
+  assertProjectSize(project);
+  const encrypted = await encryptProject(project);
   await fb.firestoreMod.setDoc(fb.firestoreMod.doc(fb.db, "users", user.uid, "projects", "active"), encrypted);
   setStatus("Cloud ulozeny", "success");
   setAccountNotice("Cloud projekt bol ulozeny sifrovane.", "secure");
@@ -2135,6 +2182,19 @@ function slugify(value) {
     .slice(0, 64);
 }
 
+function randomToken(length = 10) {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+}
+
+function getOrCreateDynamicSlug() {
+  const current = slugify(dom.dynamicSlug.value);
+  if (current) return current;
+  const base = slugify(dom.projectName.value).slice(0, 36) || "qr";
+  return `${base}-${randomToken(10)}`;
+}
+
 function getRedirectUrl(slug) {
   const path = window.location.pathname.replace(/[^/]*$/, "redirect.html");
   return `${window.location.origin}${path}?id=${encodeURIComponent(slug)}`;
@@ -2148,7 +2208,7 @@ async function saveDynamicQr() {
   const fb = await initFirebase();
   const user = fb.auth.currentUser;
   if (!user) throw new Error("Najprv sa prihlaste.");
-  const slug = slugify(dom.dynamicSlug.value || dom.projectName.value);
+  const slug = getOrCreateDynamicSlug();
   const targetUrl = getDynamicTarget();
   if (!slug) throw new Error("Zadaj dynamicky slug.");
   if (!/^https?:\/\//i.test(targetUrl)) throw new Error("Cielova URL musi zacinat http:// alebo https://.");
@@ -2169,7 +2229,7 @@ async function saveDynamicQr() {
 }
 
 function useDynamicQr() {
-  const slug = slugify(dom.dynamicSlug.value || dom.projectName.value);
+  const slug = getOrCreateDynamicSlug();
   if (!slug) {
     setStatus("Zadaj dynamicky slug", "error");
     return;
@@ -2184,7 +2244,7 @@ function useDynamicQr() {
 
 async function loadDynamicStats() {
   const fb = await initFirebase();
-  const slug = slugify(dom.dynamicSlug.value || dom.projectName.value);
+  const slug = slugify(dom.dynamicSlug.value);
   if (!slug) throw new Error("Zadaj dynamicky slug.");
   const snap = await fb.firestoreMod.getDoc(fb.firestoreMod.doc(fb.db, "redirects", slug));
   if (!snap.exists()) throw new Error("Dynamicky QR este neexistuje.");
@@ -2310,7 +2370,7 @@ function setupEvents() {
   document.querySelectorAll("input, textarea, select").forEach((control) => {
     const shouldRender = !["accountEmail", "accountPassword", "vaultPassphrase", "newAccountPassword", "qrText", "importVault"].includes(control.id);
     if (shouldRender) {
-      control.addEventListener("input", render);
+      control.addEventListener("input", scheduleRender);
       control.addEventListener("change", render);
     }
   });
@@ -2332,8 +2392,11 @@ function setupEvents() {
 
   dom.text.addEventListener("input", () => {
     state.suppressRawSync = true;
-    render();
-    state.suppressRawSync = false;
+    window.clearTimeout(state.renderTimer);
+    state.renderTimer = window.setTimeout(() => {
+      render();
+      state.suppressRawSync = false;
+    }, 90);
   });
 
   dom.template.addEventListener("change", applyTemplate);
@@ -2353,8 +2416,8 @@ function setupEvents() {
   dom.saveDynamic.addEventListener("click", () => guarded(saveDynamicQr));
   dom.useDynamic.addEventListener("click", useDynamicQr);
   dom.loadDynamicStats.addEventListener("click", () => guarded(loadDynamicStats));
-  dom.testScanMode.addEventListener("click", openScanTestMode);
-  dom.exportBundle.addEventListener("click", exportProjectBundle);
+  dom.testScanMode.addEventListener("click", () => guarded(openScanTestMode));
+  dom.exportBundle.addEventListener("click", () => guarded(exportProjectBundle));
 
   dom.importVault.addEventListener("change", () => {
     const file = dom.importVault.files && dom.importVault.files[0];
@@ -2371,6 +2434,15 @@ function setupEvents() {
       state.logoImage = null;
       state.logoDataUrl = "";
       if (dom.logoFileLabel) dom.logoFileLabel.textContent = translateText("Nie je vybraty ziadny subor", getLanguage());
+      render();
+      return;
+    }
+    if (file.size > MAX_LOGO_FILE_SIZE) {
+      dom.logoInput.value = "";
+      state.logoImage = null;
+      state.logoDataUrl = "";
+      if (dom.logoFileLabel) dom.logoFileLabel.textContent = translateText("Nie je vybraty ziadny subor", getLanguage());
+      setStatus(`Logo je prilis velke. Maximum je ${Math.round(MAX_LOGO_FILE_SIZE / 1024)} KB.`, "error");
       render();
       return;
     }
@@ -2417,27 +2489,27 @@ function setupEvents() {
     });
   });
 
-  dom.downloadPng.addEventListener("click", () => {
+  dom.downloadPng.addEventListener("click", () => guarded(() => {
     render();
     saveHistory();
     download(`qrcodenator-${getFileStamp()}.png`, dom.canvas.toDataURL("image/png"));
-  });
+  }));
 
-  dom.downloadJpg.addEventListener("click", () => {
+  dom.downloadJpg.addEventListener("click", () => guarded(() => {
     render();
     saveHistory();
     download(`qrcodenator-${getFileStamp()}.jpg`, dom.canvas.toDataURL("image/jpeg", 0.94));
-  });
+  }));
 
-  dom.downloadSvg.addEventListener("click", () => {
+  dom.downloadSvg.addEventListener("click", () => guarded(() => {
     const options = getOptions();
     const qr = state.lastQr || generateQr(options.text, options.ecl);
     const blob = new Blob([generateSvg(qr, options)], { type: "image/svg+xml" });
     saveHistory();
     download(`qrcodenator-${getFileStamp()}.svg`, URL.createObjectURL(blob));
-  });
+  }));
 
-  dom.downloadPdf.addEventListener("click", () => {
+  dom.downloadPdf.addEventListener("click", () => guarded(() => {
     render();
     saveHistory();
     const popup = window.open("", "_blank");
@@ -2447,7 +2519,7 @@ function setupEvents() {
     }
     popup.document.write(`<!doctype html><title>QRcodenator PDF</title><style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#fff}img{max-width:100%;height:auto}@media print{button{display:none}}</style><button onclick="print()">Tlacit / ulozit PDF</button><img src="${dom.canvas.toDataURL("image/png")}">`);
     popup.document.close();
-  });
+  }));
 
   dom.copyPng.addEventListener("click", async () => {
     if (!navigator.clipboard || !window.ClipboardItem) {

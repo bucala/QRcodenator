@@ -12,7 +12,7 @@
 [![Version](https://img.shields.io/badge/version-2.0.0-orange)](#changelog)
 [![Vanilla JS](https://img.shields.io/badge/Vanilla-JS-yellow?logo=javascript)](app.js)
 [![No Framework](https://img.shields.io/badge/No%20Framework-zero%20build-lightgrey)](#)
-[![Firebase](https://img.shields.io/badge/Firebase-optional-yellow?logo=firebase)](firebase-config.json)
+[![Firebase](https://img.shields.io/badge/Firebase-optional-yellow?logo=firebase)](config.example.js)
 
 ---
 
@@ -36,7 +36,7 @@
 - **18 typov obsahu** — URL, vCard, Wi-Fi, WhatsApp, PDF, video, sociálne profily, GPS, kalendár a ďalšie
 - **Dizajnový toolkit** — 6 šablón, 9 rámov, 7 vzorcov modulov, gradienty, logá, fonty, farby
 - **Šifrovaný cloud vault** — AES-GCM + PBKDF2, heslo nikdy neopustí prehliadač
-- **Dynamické QR** — slug → Firestore redirect s počítadlom skenov
+- **Dynamické QR** — neguessovateľný slug → Firestore redirect, scan analytics cez voliteľný backend endpoint
 - **Scan-safe rendering** — pixel-aligned canvas, force-square moduly pre mobilné skenery
 
 ---
@@ -256,13 +256,14 @@ QRcodenator počíta skóre čitateľnosti na základe viacerých faktorov a zob
 
 **Firestore prístup:**
 - Projekty uložené v `users/{uid}/projects/{projectId}` — prístupné len vlastníkovi
-- Dynamické QR presmerovaná dokumenty — verejné čítanie len pre aktívne slug dokumenty
-- Verejné zápisy obmedzené len na inkrementáciu `scanCount` o 1
+- Dynamické QR redirect dokumenty — verejné čítanie len pre aktívne slug dokumenty
+- Anonymné zápisy do Firestore sú zakázané; scan analytika má ísť cez rate-limitovaný backend endpoint
 
 **Firebase config:**
 - Firebase web config (API key, projectId…) sú **verejné identifikátory** — nie tajomstvá
 - Bezpečnosť závisí od Auth pravidiel, Firestore rules a vault šifrovania na klientovi
-- Config je zabalený priamo do `app.js` a `redirect.html` — žiadne manuálne kopírovanie
+- Reálny config sa necommituje: použi ignorovaný `config.js` alebo `firebase-config.local.json`
+- Ak bol reálny config niekedy commitnutý, rotuj/reštriktuj Web API key vo Firebase/Google Cloud
 
 </details>
 
@@ -280,7 +281,8 @@ QRcodenator počíta skóre čitateľnosti na základe viacerých faktorov a zob
 3. V **Authentication → Sign-in method** povoľ **Email/Password**
 4. V **Firestore Database** vytvor databázu (Production mode)
 5. Skopíruj a publikuj `firestore.rules` z tohto repozitára
-6. Firebase config je zabalený priamo v `app.js` — žiadna ďalšia konfigurácia nie je potrebná
+6. Skopíruj `config.example.js` → `config.js` alebo `firebase-config.example.json` → `firebase-config.local.json`
+7. Doplň hodnoty z Firebase Console. Lokálne config súbory sú ignorované Gitom.
 
 ### Riešenie problémov
 
@@ -303,17 +305,19 @@ QRcodenator počíta skóre čitateľnosti na základe viacerých faktorov a zob
 
 **Princíp fungovania:**
 1. QR kód ukazuje na `redirect.html?id=SLUG` — nie priamo na cieľovú URL
-2. `redirect.html` načíta slug z Firestore, inkrementuje `scanCount`, a presmeruje návštevníka
+2. `redirect.html` načíta slug z Firestore a presmeruje návštevníka
 3. Cieľovú URL môžeš zmeniť v aplikácii bez toho, aby si musel tlačiť nový QR kód
+4. Počítanie skenov môže volať voliteľný `analyticsEndpoint`, ktorý má bežať ako rate-limitovaný backend
 
 **Výhody dynamického QR:**
 - Cieľ môžeš meniť kedykoľvek
-- Každý sken sa zaráta (live počítadlo)
+- Scan analytiku môžeš doplniť bez verejných Firestore zápisov
 - Ideálne pre tlačené materiály (vizitky, letáky, plagáty)
 
 **Bezpečnostné limity:**
 - Verejné čítanie len pre aktívne slug dokumenty
-- Zápis len pre inkrementáciu `scanCount` — žiadne iné pole nie je zapisovateľné verejne
+- Verejný zápis do `scanCount` je vypnutý, aby sa štatistiky nedali jednoducho falšovať refreshom alebo skriptom
+- Nový slug dostane náhodný suffix, ak pole slug necháš prázdne
 
 </details>
 
@@ -327,7 +331,9 @@ QRcodenator počíta skóre čitateľnosti na základe viacerých faktorov a zob
 | `redirect.html` | Dynamický QR redirect a počítadlo skenov |
 | `styles.css` | Apple-style responzívny dizajn, dark/light mode |
 | `app.js` | QR engine, rendering, exporty, localStorage, Firebase vault |
-| `firebase-config.json` | Firebase web config referencia (zabalená v app.js) |
+| `config.example.js` | Šablóna pre ignorovaný runtime Firebase config |
+| `firebase-config.example.json` | Šablóna pre lokálny Firebase config JSON |
+| `.env.example` | Šablóna deploy environment premenných |
 | `firestore.rules` | Firestore bezpečnostné pravidlá |
 | `CHANGELOG.md` | Kompletná história projektu |
 
@@ -336,7 +342,7 @@ QRcodenator počíta skóre čitateľnosti na základe viacerých faktorov a zob
 ## 🛠️ Development Notes
 
 - Projekt je zámerné **framework-free** a beží ako statická web stránka
-- Necommituj osobné Firebase credentials (API key v `app.js` je verejný identifikátor)
+- Necommituj reálne Firebase config súbory, `.env` súbory ani generovaný deploy config
 - Pri pridaní funkcie aktualizuj tento README ak sa mení správanie aplikácie
 - Pri každej zmene aktualizuj `CHANGELOG.md` v rovnakom commite
 

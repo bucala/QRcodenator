@@ -4,6 +4,30 @@ All notable changes to QRcodenator are tracked here.
 
 This project follows a simple rule: every code, UI, security, or documentation change must update this changelog in the same commit.
 
+## 2026-06-14 - Security Audit Hardening
+
+Commit: current security hardening update
+
+### Added
+
+- Added `.gitignore` entries for local Firebase config files and environment files.
+- Added `config.example.js`, `firebase-config.example.json`, and `.env.example` templates.
+- Added runtime Firebase config loading from ignored `config.js` or `firebase-config.local.json`.
+- Added project size guards before local save, cloud save, vault export, history save, and export bundle generation.
+- Added logo upload size guard to reduce localStorage and Firestore document limit risk.
+- Added debounced render scheduling for high-frequency input events.
+
+### Changed
+
+- Removed the committed real `firebase-config.json` from the working tree.
+- Removed XOR-obfuscated Firebase config from `app.js` and `redirect.html`.
+- Dynamic QR now generates a random suffix when the slug field is empty.
+- `redirect.html` no longer writes public `scanCount` increments directly to Firestore.
+- Scan analytics now require an optional rate-limited backend endpoint.
+- Firestore rules no longer allow anonymous `scanCount` updates.
+- Export actions now use the shared guarded error handler.
+- README now documents runtime config, key rotation, ignored config files, and backend-based scan analytics.
+
 ## 2026-06-13 - Advanced Studio Workflow Expansion
 
 Commit: current advanced workflow update
@@ -174,7 +198,7 @@ Commit: current Firebase and QR fix
 ### Added
 
 - Added embedded packaged Firebase web config in `app.js`.
-- Added `firebase-config.json` with the required Firebase web config JSON.
+- Added the first Firebase web config reference file for the app.
 - Added the exact Firebase config JSON to README for project reference.
 
 ### Changed

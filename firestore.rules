@@ -17,9 +17,6 @@ service cloud.firestore {
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.targetUrl is string
         && request.resource.data.targetUrl.matches('https?://.*');
-      allow update: if resource.data.active == true
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount'])
-        && request.resource.data.scanCount == resource.data.scanCount + 1;
       allow delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
       allow list: if false;
     }

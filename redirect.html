@@ -46,22 +46,32 @@
       <p id="message">Overujem dynamicky QR kod.</p>
     </main>
 
+    <script src="config.js"></script>
     <script type="module">
       const FIREBASE_VERSION = "12.14.0";
-      const FIREBASE_CONFIG_SEAL = "ClACHw0uCxhWVVBsPxsUPw1uP14eKikJVx8IWU05Rlw9OAUVWW4GERg3JwtVOj4vPipQAVQAABgcaRoEEBsNTV5HHxMXABZIGAABAwYDEwADFwEOFwAPEQRBEUIbQ1lOBF8aAxQRFyYAR1RDBR0RQhIEGw0AQgdLXVAQGwsXDwYRLQdOHQQBTk4PBBsSHQcKCgQaDgZBFEQEBBcNB0gGHR4AAggBSw8RBE1eDxsEBh8VShwHFiEGAQAAHCgQTUgPRFZCX0QYQl5AQ1ddRklMAAQfO0lUW1ddTh9CXkJCVlhTVF9VRlUFSBRbEV8SS0dcQBQBVwEEDVVADEEaEAVFW1YBVwQUExAaFgADBBobO0lUW1crWRxAP0kgKVw8Jz9DCQ==";
-      const FIREBASE_CONFIG_SEAL_KEY = "qrcodenator-vault-ui";
 
-      function base64ToBytes(value) {
-        const binary = atob(value);
-        return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+      async function loadFirebaseConfig() {
+        if (window.QRCODENATOR_FIREBASE_CONFIG && window.QRCODENATOR_FIREBASE_CONFIG.apiKey) {
+          return window.QRCODENATOR_FIREBASE_CONFIG;
+        }
+        try {
+          const response = await fetch("firebase-config.local.json", { cache: "no-store" });
+          if (response.ok) return response.json();
+        } catch {
+          // Optional local config is absent in production unless the deploy target provides it.
+        }
+        throw new Error("Firebase config chyba.");
       }
 
-      function openEmbeddedFirebaseConfig() {
-        const bytes = base64ToBytes(FIREBASE_CONFIG_SEAL);
-        const text = Array.from(bytes, (byte, index) => (
-          String.fromCharCode(byte ^ FIREBASE_CONFIG_SEAL_KEY.charCodeAt(index % FIREBASE_CONFIG_SEAL_KEY.length))
-        )).join("");
-        return JSON.parse(text);
+      function trackScan(slug, config) {
+        const endpoint = window.QRCODENATOR_ANALYTICS_ENDPOINT || config.analyticsEndpoint;
+        if (!endpoint) return;
+        const body = JSON.stringify({ slug, at: new Date().toISOString() });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(endpoint, new Blob([body], { type: "application/json" }));
+          return;
+        }
+        fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
       }
 
       const message = document.querySelector("#message");
@@ -71,11 +81,12 @@
       try {
         if (!slug || !/^[a-z0-9-]{1,64}$/.test(slug)) throw new Error("Neplatny QR identifikator.");
 
+        const config = await loadFirebaseConfig();
         const [{ initializeApp }, firestore] = await Promise.all([
           import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`),
           import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`),
         ]);
-        const app = initializeApp(openEmbeddedFirebaseConfig());
+        const app = initializeApp(config);
         const db = firestore.getFirestore(app);
         const ref = firestore.doc(db, "redirects", slug);
         const snap = await firestore.getDoc(ref);
@@ -83,7 +94,7 @@
 
         const data = snap.data();
         if (!data.active || !/^https?:\/\//i.test(data.targetUrl || "")) throw new Error("Dynamicky QR kod nie je aktivny.");
-        await firestore.updateDoc(ref, { scanCount: firestore.increment(1) }).catch(() => {});
+        trackScan(slug, config);
         window.location.replace(data.targetUrl);
       } catch (error) {
         message.textContent = error.message || "Presmerovanie zlyhalo.";
